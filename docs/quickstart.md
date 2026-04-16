@@ -1,186 +1,122 @@
 # Quick Start Guide
 
-Get your Tech Digest Bot running in 10 minutes.
+Get your Tech Digest Bot running in 5 minutes.
 
-## Basic Setup (Without OpenClaw)
+## Prerequisites
 
-### 1. Install Dependencies
+- Python 3.14+
+- Telegram Bot Token from [@BotFather](https://t.me/BotFather)
+- [Ollama](https://ollama.ai/) installed and running
+- (Optional) OpenClaw for enhanced research
+
+## Installation
 
 ```bash
+# Navigate to project
+cd tech-news-digest-bot
+
+# Install dependencies
 pip install -e .
 
 # Or with uv (recommended)
 uv sync
 ```
 
-### 2. Configure Environment
+## Configuration
 
 ```bash
-# Copy environment template
-cp .env.example .env
+# 1. Start Ollama (in a separate terminal)
+ollama serve
 
-# Edit .env and add your credentials:
+# 2. Pull a model (recommended: qwen2.5:7b)
+ollama pull qwen2.5:7b
+
+# 3. Configure environment
+# Edit .env with your bot token
 TELEGRAM_BOT_TOKEN=your_bot_token_from_botfather
-OPENROUTER_API_KEY=your_openrouter_api_key
-OPENCLAW_ENABLED=false
+OLLAMA_BASE_URL=http://localhost:11434/v1
+OLLAMA_MODEL=qwen2.5:7b
 ```
 
-Get tokens:
-- **Telegram Bot Token**: Message [@BotFather](https://t.me/BotFather) on Telegram → `/newbot`
-- **OpenRouter API Key**: Sign up at [openrouter.ai](https://openrouter.ai/)
-
-### 3. Run the Bot
+## Run the Bot
 
 ```bash
-tech-digest-bot
+# Option 1: Use the run script
+./run_bot.sh
+
+# Option 2: Direct command
+source .venv/bin/activate
+python -m tech_digest_bot
 ```
 
 You should see:
 ```
 🤖 Starting Tech Digest Bot...
-Model: google/gemini-2.0-flash-exp:free
+Provider: Ollama (Local)
+Model: qwen2.5:7b
+Ollama URL: http://localhost:11434/v1
 OpenClaw enabled: False
 Press Ctrl+C to stop
 ```
 
-### 4. Test It
+## Test It
 
 1. Open Telegram and find your bot
 2. Send `/start`
-3. Send a query: `Explain WebAssembly`
-4. Get a 2-minute digest with web search results!
+3. Ask a question: `What's new in Rust?`
+4. Get a comprehensive digest!
 
-## Advanced Setup (With OpenClaw)
+## OpenClaw Integration (Optional)
 
-### Prerequisites
+For enhanced AI-powered research:
 
-- Node.js 18+ installed
-- Basic setup completed above
-
-### 1. Run Setup Script
+### Enable OpenClaw
 
 ```bash
-./scripts/setup_openclaw.sh
-```
+# 1. Start OpenClaw gateway
+openclaw start
 
-This will:
-- Install OpenClaw globally via npm
-- Copy JavaScript skills to `~/.openclaw/skills/`
-- Copy workflows to `~/.openclaw/workflows/`
-- Start the OpenClaw Gateway
-
-### 2. Verify OpenClaw
-
-```bash
-# Check Gateway is running
-curl http://localhost:3000/health
-
-# Test integration
-python scripts/test_integration.py
-```
-
-Expected output:
-```
-✅ Gateway is running
-✅ Got 3 stories from OpenClaw
-✅ Got 3 repos from OpenClaw
-✅ Aggregated 18 items
-```
-
-### 3. Enable OpenClaw
-
-Edit `.env`:
-```bash
+# 2. Edit .env
 OPENCLAW_ENABLED=true
-```
 
-### 4. Restart Bot
-
-```bash
-tech-digest-bot
+# 3. Restart the bot
+./run_bot.sh
 ```
 
 Now you should see:
 ```
 🤖 Starting Tech Digest Bot...
-Model: google/gemini-2.0-flash-exp:free
+Provider: Ollama (Local)
+Model: qwen2.5:7b
 OpenClaw enabled: True
 OpenClaw is available - using enhanced research
 ```
 
-### 5. Test Enhanced Research
+## How It Works
 
-Send to your bot:
-```
-Explain Rust programming language
-```
+### Without OpenClaw (Basic Mode)
+- Uses **DuckDuckGo** for web search
+- LLM generates digest from search results
+- Fast and reliable
 
-With OpenClaw enabled, the digest will now include:
-- ✅ Web search results (DuckDuckGo)
-- ✅ HackerNews discussions about Rust
-- ✅ GitHub trending Rust repositories
-- ✅ Dev.to articles about Rust
+### With OpenClaw (Enhanced Mode)
+- Uses **DuckDuckGo** for web search
+- Uses **OpenClaw Agent** for AI-powered research
+- LLM synthesizes both sources
+- More comprehensive results
 
-Much richer content! 🎉
+## Commands
 
-## Troubleshooting
-
-### Bot Won't Start
-
-**Error: `TELEGRAM_BOT_TOKEN is required`**
-- Make sure `.env` file exists
-- Check token is copied correctly from BotFather
-
-**Error: `OPENROUTER_API_KEY is required`**
-- Sign up at openrouter.ai
-- Copy API key to `.env`
-
-### OpenClaw Not Working
-
-**Gateway not running:**
-```bash
-# Check status
-openclaw status
-
-# Start Gateway
-openclaw start
-```
-
-**Skills not found:**
-```bash
-# List skills
-openclaw skills list
-
-# If empty, copy skills
-cp openclaw/skills/*.js ~/.openclaw/skills/
-```
-
-**Connection refused:**
-```bash
-# Test Gateway
-curl http://localhost:3000/health
-
-# Should return: {"status":"ok"}
-```
-
-### No HackerNews/GitHub Data
-
-```bash
-# Verify skills are installed
-ls ~/.openclaw/skills/
-
-# Should show:
-# devto-trending.js
-# github-trending.js
-# hackernews-scraper.js
-```
+- `/start` - Welcome message
+- `/help` - Show available commands
+- `/new` - Start a new conversation
 
 ## Usage Examples
 
 ### Basic Queries
 ```
+What's new in Python?
 Explain GraphQL
-What's new in Python 3.13?
 How does Kubernetes work?
 Latest developments in AI
 ```
@@ -191,20 +127,56 @@ You: Explain WebAssembly
 Bot: [Provides digest]
 
 You: How does it compare to JavaScript?
-Bot: [Answers with context from previous digest]
+Bot: [Answers with context]
 ```
 
-### Start Fresh
-```
-/new
-```
-Clears conversation history, ready for new topic.
+## Troubleshooting
 
-## What's Next?
+### Bot Won't Start
 
-- [Architecture Guide](architecture.md) - Understand how it works
-- [OpenClaw Integration](openclaw-integration.md) - Deep dive into OpenClaw
-- [Project Structure](project-structure.md) - Code organization
+**Error: `TELEGRAM_BOT_TOKEN is required`**
+- Make sure `.env` file exists
+- Check token is correct
+
+**Error: Ollama connection failed**
+- Make sure Ollama is running: `ollama serve`
+- Check if the model is available: `ollama list`
+- Verify OLLAMA_BASE_URL in `.env`
+
+### OpenClaw Not Working
+
+**Check if OpenClaw is running:**
+```bash
+openclaw status
+```
+
+Should show "running" in output.
+
+**Disable OpenClaw if not needed:**
+```bash
+# In .env file
+OPENCLAW_ENABLED=false
+```
+
+The bot works great without OpenClaw using DuckDuckGo search.
+
+### Multiple Bot Instances Error
+
+```
+Error: Conflict: terminated by other getUpdates request
+```
+
+**Solution:** Stop all instances:
+```bash
+pkill -f "tech-digest-bot"
+pkill -f "python -m tech_digest_bot"
+```
+
+Then start fresh with `./run_bot.sh`
+
+## Next Steps
+
+- [Architecture](architecture.md) - Understand how it works
 
 ## Development Mode
 
@@ -212,17 +184,17 @@ Clears conversation history, ready for new topic.
 # Run from source
 python -m tech_digest_bot
 
-# Run tests
-pytest
-
 # Type checking
-mypy src/
+make typecheck
 
 # Linting
-ruff check src/
+make lint
 
 # Format code
-ruff format src/
+make format
+
+# Clean generated files
+make clean
 ```
 
-Enjoy your supercharged tech news bot! 🚀
+Enjoy your tech digest bot! 🚀

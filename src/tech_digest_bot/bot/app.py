@@ -13,7 +13,7 @@ from telegram.ext import (
 
 from ..ai import LLMClient, ResearchService
 from ..config import get_settings
-from ..search import OpenClawClient
+from ..search import OpenClawCLIClient
 from .handlers import BotHandlers
 
 logger = logging.getLogger(__name__)
@@ -32,21 +32,19 @@ class TechDigestBot:
         if not is_valid:
             logger.error("Invalid configuration:")
             for error in errors:
-                logger.error(f"  - {error}")
+                logger.error("  - %s", error)
             sys.exit(1)
 
-        # Initialize components
+        # Initialize Ollama LLM client
         self.llm_client = LLMClient(
-            api_key=self.settings.openrouter_api_key,
-            model=self.settings.openrouter_model,
+            model=self.settings.ollama_model,
+            base_url=self.settings.ollama_base_url,
         )
 
-        # Initialize OpenClaw if enabled
+        # Initialize OpenClaw CLI if enabled
         openclaw_client = None
         if self.settings.openclaw_enabled:
-            openclaw_client = OpenClawClient(
-                base_url=self.settings.openclaw_gateway_url
-            )
+            openclaw_client = OpenClawCLIClient()
 
         self.research_service = ResearchService(
             llm_client=self.llm_client,
@@ -76,9 +74,15 @@ class TechDigestBot:
         )
 
         # Register handlers
-        application.add_handler(CommandHandler("start", self.handlers.start_command))
-        application.add_handler(CommandHandler("help", self.handlers.help_command))
-        application.add_handler(CommandHandler("new", self.handlers.new_command))
+        application.add_handler(
+            CommandHandler("start", self.handlers.start_command)
+        )
+        application.add_handler(
+            CommandHandler("help", self.handlers.help_command)
+        )
+        application.add_handler(
+            CommandHandler("new", self.handlers.new_command)
+        )
 
         # Register message handler for regular text
         application.add_handler(
@@ -95,8 +99,10 @@ class TechDigestBot:
     def run(self) -> None:
         """Start the bot."""
         logger.info("🤖 Starting Tech Digest Bot...")
-        logger.info(f"Model: {self.settings.openrouter_model}")
-        logger.info(f"OpenClaw enabled: {self.settings.openclaw_enabled}")
+        logger.info("Provider: Ollama (Local)")
+        logger.info("Model: %s", self.settings.ollama_model)
+        logger.info("Ollama URL: %s", self.settings.ollama_base_url)
+        logger.info("OpenClaw enabled: %s", self.settings.openclaw_enabled)
         logger.info("Press Ctrl+C to stop")
 
         # Create and run application

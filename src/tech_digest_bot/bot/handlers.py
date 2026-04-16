@@ -44,7 +44,8 @@ class BotHandlers:
             "• `What's new in Python 3.13?`\n"
             "• `How does Kubernetes work?`\n"
             "• `Latest developments in AI`\n\n"
-            "After I provide a digest, feel free to ask follow-up questions!\n\n"
+            "After I provide a digest, feel free to ask "
+            "follow-up questions!\n\n"
             "Use /help to see all commands."
         )
         await update.message.reply_text(welcome_message, parse_mode="Markdown")
@@ -74,7 +75,8 @@ class BotHandlers:
             "4️⃣ Use /new to start researching a new topic\n\n"
             "*Tips:*\n"
             "• Be specific for better results\n"
-            "• I can explain concepts, compare technologies, or discuss trends\n"
+            "• I can explain concepts, compare technologies, "
+            "or discuss trends\n"
             "• Follow-up questions keep the context from previous digest"
         )
         await update.message.reply_text(help_message, parse_mode="Markdown")
@@ -100,7 +102,7 @@ class BotHandlers:
     async def handle_message(
         self, update: Update, context: ContextTypes.DEFAULT_TYPE
     ) -> None:
-        """Handle regular text messages - research topics or answer questions."""
+        """Handle text messages - research topics or answer questions."""
         if not update.message or not update.effective_user:
             return
 
@@ -133,7 +135,9 @@ class BotHandlers:
 
         if is_followup:
             # Answer as follow-up question
-            logger.info(f"Follow-up question from user {user_id}: {user_message}")
+            logger.info(
+                "Follow-up question from user %d: %s", user_id, user_message
+            )
             response = await self.research.answer_followup(
                 user_message, self.conversation_history[user_id]
             )
@@ -148,11 +152,14 @@ class BotHandlers:
 
         else:
             # Research new topic
-            logger.info(f"New research request from user {user_id}: {user_message}")
+            logger.info(
+                "New research request from user %d: %s", user_id, user_message
+            )
 
             # Send initial message
             status_msg = await update.message.reply_text(
-                "🔍 *Researching...*\n\n" "Searching the web for information...",
+                "🔍 *Researching...*\n\n"
+                "Searching the web for information...",
                 parse_mode="Markdown",
             )
 
@@ -188,7 +195,7 @@ class BotHandlers:
         self, update: Update, context: ContextTypes.DEFAULT_TYPE
     ) -> None:
         """Handle errors."""
-        logger.error(f"Update {update} caused error: {context.error}")
+        logger.error("Update %s caused error: %s", update, context.error)
 
         if update and update.message:
             await update.message.reply_text(

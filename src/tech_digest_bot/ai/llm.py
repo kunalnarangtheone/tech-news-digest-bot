@@ -9,20 +9,24 @@ logger = logging.getLogger(__name__)
 
 
 class LLMClient:
-    """OpenRouter LLM client."""
+    """LLM client using Ollama for local inference."""
 
-    def __init__(self, api_key: str, model: str) -> None:
+    def __init__(
+        self,
+        model: str = "qwen2.5:7b",
+        base_url: str = "http://localhost:11434/v1",
+    ) -> None:
         """
-        Initialize LLM client.
+        Initialize LLM client with Ollama.
 
         Args:
-            api_key: OpenRouter API key
-            model: Model identifier
+            model: Ollama model identifier (default: qwen2.5:7b)
+            base_url: Ollama API base URL
         """
         self.model = model
         self.client = OpenAI(
-            base_url="https://openrouter.ai/api/v1",
-            api_key=api_key,
+            base_url=base_url,
+            api_key="ollama",  # Ollama doesn't require a real API key
         )
 
     async def generate_digest(
@@ -44,7 +48,8 @@ class LLMClient:
         Returns:
             Generated digest text
         """
-        default_system_prompt = """You are a tech digest assistant. Your job is to create concise, informative 2-minute digests on tech topics.
+        default_system_prompt = """You are a tech digest assistant.
+Your job is to create concise, informative 2-minute digests.
 
 Guidelines:
 - Start with a brief overview (1-2 sentences)
@@ -69,7 +74,10 @@ Generate a comprehensive yet concise digest."""
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=[
-                    {"role": "system", "content": system_prompt or default_system_prompt},
+                    {
+                        "role": "system",
+                        "content": system_prompt or default_system_prompt,
+                    },
                     {"role": "user", "content": user_prompt},
                 ],
                 temperature=0.7,
@@ -82,7 +90,7 @@ Generate a comprehensive yet concise digest."""
             return ""
 
         except Exception as e:
-            logger.error(f"Error generating digest: {e}")
+            logger.error("Error generating digest: %s", e)
             raise
 
     async def answer_question(
@@ -102,7 +110,8 @@ Generate a comprehensive yet concise digest."""
         Returns:
             Answer text
         """
-        system_prompt = """You are a helpful tech assistant. Answer follow-up questions based on the previous digest you provided.
+        system_prompt = """You are a helpful tech assistant.
+Answer follow-up questions based on the previous digest.
 
 Guidelines:
 - Be concise but informative
@@ -129,5 +138,5 @@ Guidelines:
             return ""
 
         except Exception as e:
-            logger.error(f"Error answering question: {e}")
+            logger.error("Error answering question: %s", e)
             raise

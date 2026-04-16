@@ -1,13 +1,19 @@
 """DuckDuckGo search provider."""
 
 import logging
-from typing import Any
+from typing import TypedDict
 
 from duckduckgo_search import DDGS
 
-from ..models import SearchResult
-
 logger = logging.getLogger(__name__)
+
+
+class SearchResult(TypedDict):
+    """Search result data structure."""
+
+    title: str
+    url: str
+    content: str
 
 
 class DuckDuckGoSearch:
@@ -17,7 +23,9 @@ class DuckDuckGoSearch:
         """Initialize DuckDuckGo search client."""
         self.client = DDGS()
 
-    async def search(self, query: str, max_results: int = 5) -> list[SearchResult]:
+    async def search(
+        self, query: str, max_results: int = 5
+    ) -> list[SearchResult]:
         """
         Search the web using DuckDuckGo.
 
@@ -45,9 +53,9 @@ class DuckDuckGoSearch:
                     )
                 )
 
-            logger.info(f"Found {len(results)} search results for: {query}")
+            logger.info("Found %d search results for: %s", len(results), query)
             return results
 
         except Exception as e:
-            logger.error(f"DuckDuckGo search error: {e}")
+            logger.error("DuckDuckGo search error: %s", e)
             return []

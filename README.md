@@ -17,15 +17,15 @@ An AI-powered Telegram bot that researches tech topics and generates concise, di
 
 - Python 3.14+
 - Telegram account
-- [OpenRouter API key](https://openrouter.ai/) (free tier available)
-- (Optional) Node.js 18+ for OpenClaw integration
+- [Ollama](https://ollama.ai/) running locally
+- (Optional) OpenClaw for enhanced research
 
 ### Installation
 
 ```bash
 # Clone repository
 git clone <repo-url>
-cd openclaw-bot
+cd tech-news-digest-bot
 
 # Install dependencies
 pip install -e .
@@ -42,7 +42,11 @@ cp .env.example .env
 
 # Edit .env and add required values
 TELEGRAM_BOT_TOKEN=your_bot_token
-OPENROUTER_API_KEY=your_api_key
+
+# Start Ollama (if not already running)
+ollama serve
+# Pull a model (e.g., qwen2.5:7b)
+ollama pull qwen2.5:7b
 ```
 
 ### Run the Bot
@@ -57,66 +61,54 @@ tech-digest-bot
 
 ## OpenClaw Integration (Optional)
 
-For advanced research with browser automation:
+For enhanced AI-powered research using OpenClaw CLI:
 
 ```bash
-# 1. Install OpenClaw
-npm install -g openclaw
+# 1. Start OpenClaw gateway
 openclaw start
 
-# 2. Install skills
-cp openclaw/skills/*.js ~/.openclaw/skills/
-
-# 3. Enable in .env
+# 2. Enable in .env
 OPENCLAW_ENABLED=true
 
-# 4. Test integration
-python scripts/test_integration.py
+# 3. Restart the bot
+python -m tech_digest_bot
 ```
 
-See [docs/openclaw-integration.md](docs/openclaw-integration.md) for details.
+When enabled, the bot uses OpenClaw's AI agent for enhanced research capabilities.
 
 ## Project Structure
 
 ```
-openclaw-bot/
+tech-news-digest-bot/
 ├── src/tech_digest_bot/     # Main package
 │   ├── bot/                  # Telegram bot logic
 │   ├── ai/                   # LLM and research
 │   ├── search/               # Search providers (DDG, OpenClaw)
-│   ├── config/               # Configuration
-│   └── models/               # Type definitions
-├── openclaw/                 # OpenClaw resources
-│   ├── skills/               # JavaScript browser automation
-│   └── workflows/            # JavaScript cron workflows
-├── tests/                    # Test suite
+│   └── config/               # Configuration
 ├── docs/                     # Documentation
-└── scripts/                  # Utility scripts
+├── Makefile                  # Common tasks
+└── run_bot.sh                # Bot launcher script
 ```
 
 ## Development
 
 ```bash
-# Install dev dependencies
-pip install -e ".[dev]"
-
-# Run tests
-pytest
-
 # Type checking
-mypy src/
+make typecheck
 
 # Linting
-ruff check src/
+make lint
 
 # Formatting
-ruff format src/
+make format
+
+# Clean generated files
+make clean
 ```
 
 ## Documentation
 
 - [Quick Start Guide](docs/quickstart.md)
-- [OpenClaw Integration](docs/openclaw-integration.md)
 - [Architecture](docs/architecture.md)
 
 ## License

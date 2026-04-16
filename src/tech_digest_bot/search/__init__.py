@@ -1,6 +1,6 @@
 """Search providers and clients."""
 
 from .duckduckgo import DuckDuckGoSearch
-from .openclaw import OpenClawClient
+from .openclaw_cli import OpenClawCLIClient
 
-__all__ = ["DuckDuckGoSearch", "OpenClawClient"]
+__all__ = ["DuckDuckGoSearch", "OpenClawCLIClient"]

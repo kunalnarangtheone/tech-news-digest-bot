@@ -1,4 +1,7 @@
-"""Tech Digest Bot - AI-powered tech news research bot with OpenClaw integration."""
+"""Tech Digest Bot - AI-powered tech research bot.
+
+This module provides the main bot implementation.
+"""
 
 __version__ = "0.3.0"
 

@@ -2,216 +2,149 @@
 
 ## Overview
 
-Tech Digest Bot is a modular Python application with optional JavaScript integration for browser automation via OpenClaw.
+Tech Digest Bot is a Telegram bot that provides AI-generated tech news digests using web search and optional OpenClaw agent integration.
+
+## System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                  Telegram User                       │
-└────────────────┬────────────────────────────────────┘
-                 │
-                 │ Messages
-                 ▼
+│                 Telegram User                        │
+└──────────────────────┬──────────────────────────────┘
+                       │
+                       ▼
 ┌─────────────────────────────────────────────────────┐
-│              Telegram Bot (Python)                   │
-│  ┌──────────────────────────────────────────────┐  │
-│  │         BotHandlers                          │  │
-│  │  • /start, /help, /new                       │  │
-│  │  • Message routing                           │  │
-│  │  • Conversation history                      │  │
-│  └────────────┬─────────────────────────────────┘  │
-└───────────────┼────────────────────────────────────┘
-                │
-                │ Research requests
-                ▼
+│              Telegram Bot API                        │
+│         (python-telegram-bot library)                │
+└──────────────────────┬──────────────────────────────┘
+                       │
+                       ▼
 ┌─────────────────────────────────────────────────────┐
-│           ResearchService (Python)                   │
-│  ┌──────────────────────────────────────────────┐  │
-│  │  • Coordinates search providers              │  │
-│  │  • Aggregates results                        │  │
-│  │  • Manages LLM interaction                   │  │
-│  └──┬───────────────────────────────────────┬───┘  │
-└─────┼───────────────────────────────────────┼──────┘
-      │                                       │
-      │                                       │
-      ▼                                       ▼
-┌──────────────────┐              ┌────────────────────┐
-│  DuckDuckGoSearch│              │  OpenClawClient    │
-│    (Python)      │              │    (Python)        │
-│                  │              │                    │
-│  • Web search    │              │  • HTTP API client │
-│  • No API key    │              │  • Skill executor  │
-│  • Always works  │              │  • Optional        │
-└──────────────────┘              └────────┬───────────┘
-                                           │
-                                           │ HTTP API
-                                           ▼
-                               ┌────────────────────────┐
-                               │  OpenClaw Gateway      │
-                               │    (Node.js)           │
-                               │                        │
-                               │  • Browser automation  │
-                               │  • Puppeteer/CDP       │
-                               │  • Skill registry      │
-                               └────────┬───────────────┘
-                                        │
-                         ┌──────────────┼──────────────┐
-                         │              │              │
-                         ▼              ▼              ▼
-                  ┌──────────┐  ┌──────────┐  ┌──────────┐
-                  │HackerNews│  │  GitHub  │  │ Dev.to   │
-                  │  Skill   │  │  Skill   │  │  Skill   │
-                  │  (.js)   │  │  (.js)   │  │  (.js)   │
-                  └──────────┘  └──────────┘  └──────────┘
+│              Bot Application                         │
+│  ┌─────────────────────────────────────────────┐   │
+│  │          Message Handlers                    │   │
+│  │  - /start, /help, /new commands              │   │
+│  │  - Text message processing                   │   │
+│  └────────────────┬─────────────────────────────┘   │
+│                   │                                  │
+│                   ▼                                  │
+│  ┌─────────────────────────────────────────────┐   │
+│  │        Research Service                      │   │
+│  │  - Orchestrates search providers             │   │
+│  │  - Manages OpenClaw availability             │   │
+│  │  - Handles conversation context              │   │
+│  └────────┬───────────────────────┬──────────────┘   │
+│           │                       │                  │
+└───────────┼───────────────────────┼──────────────────┘
+            │                       │
+            ▼                       ▼
+┌──────────────────┐    ┌──────────────────────────┐
+│  DuckDuckGo      │    │  OpenClaw Agent          │
+│  Web Search      │    │  (Optional)              │
+│                  │    │  - AI-powered research   │
+│  - Real-time     │    │  - CLI subprocess        │
+│  - Web results   │    │  - Local embedded mode   │
+└──────────────────┘    └──────────────────────────┘
+            │                       │
+            └───────────┬───────────┘
+                        ▼
+            ┌──────────────────────┐
+            │   LLM Client         │
+            │   (Ollama)           │
+            │   - Local models     │
+            │   - Digest generation│
+            └──────────────────────┘
 ```
 
-## Components
+## Core Components
 
-### Bot Layer (`src/tech_digest_bot/bot/`)
+### 1. Bot Layer (`src/tech_digest_bot/bot/`)
 
-**BotHandlers**: Telegram message handlers
-- Command handlers: `/start`, `/help`, `/new`
-- Message handler: processes user queries
-- Conversation history management
-- Error handling
+**Purpose:** Handle Telegram interactions
 
-**TechDigestBot**: Application orchestrator
-- Initializes all services
-- Configures Telegram Application
-- Manages app lifecycle
+**Files:**
+- `app.py` - Application initialization and configuration
+- `handlers.py` - Message and command handlers
 
-### AI Layer (`src/tech_digest_bot/ai/`)
+**Responsibilities:**
+- Receive Telegram messages
+- Parse commands (`/start`, `/help`, `/new`)
+- Maintain conversation state
+- Send formatted responses
 
-**LLMClient**: OpenRouter LLM interface
-- Digest generation
-- Follow-up Q&A
-- Prompt management
-- Model abstraction
+### 2. Research Layer (`src/tech_digest_bot/ai/`)
 
-**ResearchService**: Multi-source research coordinator
-- Orchestrates search providers
-- Aggregates results
-- Context building
-- Fallback handling
+**Purpose:** Coordinate research and content generation
 
-### Search Layer (`src/tech_digest_bot/search/`)
+**Files:**
+- `research.py` - Research orchestration service
+- `llm.py` - LLM client wrapper
 
-**DuckDuckGoSearch**: Web search provider
-- Free, no API key required
-- Always available
-- Fallback option
+**Responsibilities:**
+- Determine research strategy (basic vs enhanced)
+- Coordinate multiple data sources
+- Manage conversation history
+- Generate final digests
 
-**OpenClawClient**: Browser automation interface
-- HTTP client for OpenClaw Gateway
-- Skill execution
-- Multi-source aggregation
-- Optional, graceful degradation
+### 3. Search Layer (`src/tech_digest_bot/search/`)
 
-### Config Layer (`src/tech_digest_bot/config/`)
+**Purpose:** Fetch information from various sources
 
-**Settings**: Configuration management
-- Environment variable loading
-- Validation
-- Default values
-- Singleton pattern
+**Files:**
+- `duckduckgo.py` - Web search provider
+- `openclaw_cli.py` - OpenClaw agent integration
 
-### Models Layer (`src/tech_digest_bot/models/`)
+**Responsibilities:**
+- Execute web searches (DuckDuckGo)
+- Query OpenClaw agent (if enabled)
+- Return structured search results
 
-**Type Definitions**: TypedDict models
-- `SearchResult`
-- `HackerNewsStory`
-- `GitHubRepo`
-- `DevToArticle`
-- `TechNews`
+### 4. Configuration (`src/tech_digest_bot/config/`)
+
+**Purpose:** Manage settings and environment
+
+**Files:**
+- `settings.py` - Configuration management
+
+**Responsibilities:**
+- Load environment variables
+- Validate required settings
+- Provide configuration to components
 
 ## Data Flow
 
-### Basic Research (No OpenClaw)
+### Basic Research Flow (DuckDuckGo only)
 
-```
-User Query
-  → BotHandlers
-  → ResearchService
-  → DuckDuckGoSearch.search()
-  → LLMClient.generate_digest()
-  → User Response
-```
+1. User sends message → Telegram Bot
+2. Bot → Research Service: `research_topic(topic)`
+3. Research Service → DuckDuckGo: `search(topic)`
+4. DuckDuckGo → Research Service: Web results
+5. Research Service → LLM: Generate digest
+6. LLM → Research Service: Generated digest
+7. Research Service → Bot: Formatted response
+8. Bot → User: Telegram message
 
-### Enhanced Research (With OpenClaw)
+### Enhanced Research Flow (with OpenClaw)
 
-```
-User Query
-  → BotHandlers
-  → ResearchService
-  → Parallel:
-      - DuckDuckGoSearch.search()
-      - OpenClawClient.aggregate_tech_news()
-          → HTTP → OpenClaw Gateway
-          → Parallel JS Skills:
-              - hackernews-scraper.js
-              - github-trending.js
-              - devto-trending.js
-          → Results aggregated
-  → Context built from all sources
-  → LLMClient.generate_digest()
-  → User Response
-```
+1. User sends message → Telegram Bot
+2. Bot → Research Service: `research_topic(topic)`
+3. Research Service → **Parallel requests:**
+   - DuckDuckGo: `search(topic)`
+   - OpenClaw CLI: `ask_agent(query)`
+4. Both sources → Research Service: Combined results
+5. Research Service → LLM: Generate enhanced digest
+6. LLM → Research Service: Generated digest
+7. Research Service → Bot: Formatted response
+8. Bot → User: Telegram message
 
-## OpenClaw Integration
+## Technology Stack
 
-### JavaScript Skills (`openclaw/skills/`)
-
-Browser automation scripts executed by OpenClaw:
-- `hackernews-scraper.js`: Puppeteer-based HN scraping
-- `github-trending.js`: GitHub trending page scraping
-- `devto-trending.js`: Dev.to article scraping
-
-### JavaScript Workflows (`openclaw/workflows/`)
-
-Cron-scheduled automation:
-- `daily-digest-workflow.js`: Daily aggregated news
-- `topic-monitor-workflow.js`: Topic trend monitoring
-
-### Communication
-
-Python ↔ OpenClaw via HTTP:
-- `POST /api/skills/execute`: Execute a skill
-- `GET /health`: Gateway health check
-
-## Error Handling
-
-1. **Graceful Degradation**: If OpenClaw unavailable, fallback to DuckDuckGo only
-2. **Exception Handling**: All async operations wrapped in try/except
-3. **User Feedback**: Clear error messages to users
-4. **Logging**: Comprehensive logging at all layers
-
-## Configuration Precedence
-
-1. Environment variables (`.env`)
-2. Default values in `Settings`
-
-## Type Safety
-
-- Strict type hints throughout
-- TypedDict for data models
-- mypy type checking in CI
-
-## Testing Strategy
-
-- Unit tests for each component
-- Integration tests for OpenClaw
-- Mock external services (Telegram, OpenRouter)
-- Pytest with async support
-
-## Scalability Considerations
-
-- Stateless handlers (conversation history in memory)
-- Parallel search execution
-- OpenClaw Gateway can run on separate server
-- LRU cache for settings
-
-## Security
-
-- No hardcoded credentials
-- Environment-based configuration
-- Input validation on user messages
-- Rate limiting via Telegram's built-in mechanism
+| Layer | Technology | Purpose |
+|-------|-----------|---------|
+| Bot Framework | python-telegram-bot | Telegram API interaction |
+| Web Search | duckduckgo-search | Real-time web results |
+| AI Agent | OpenClaw (optional) | AI-powered research |
+| LLM | Ollama | Local LLM inference |
+| LLM Model | qwen2.5:7b (default) | Text generation |
+| HTTP Client | httpx | Async HTTP requests |
+| Environment | python-dotenv | Config management |
+| Language | Python 3.14 | Modern Python features |
