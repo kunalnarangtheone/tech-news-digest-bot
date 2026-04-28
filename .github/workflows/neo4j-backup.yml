@@ -1,0 +1,43 @@
+name: Neo4j Aura Weekly Backup
+
+on:
+  schedule:
+    # Every Sunday at 2:00 AM UTC
+    - cron: '0 2 * * 0'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'  # Use 3.12 for GitHub Actions (3.14 not available yet)
+
+      - name: Install dependencies
+        run: |
+          pip install neo4j python-dotenv
+
+      - name: Run backup script
+        env:
+          NEO4J_URI: ${{ secrets.NEO4J_URI }}
+          NEO4J_USER: ${{ secrets.NEO4J_USER }}
+          NEO4J_PASSWORD: ${{ secrets.NEO4J_PASSWORD }}
+          NEO4J_DATABASE: ${{ secrets.NEO4J_DATABASE }}
+        run: |
+          python scripts/backup_neo4j.py
+
+      - name: Commit backup to repository
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add backups/neo4j/
+          git diff --staged --quiet || git commit -m "chore: neo4j backup $(date +'%Y-%m-%d')"
+          git push

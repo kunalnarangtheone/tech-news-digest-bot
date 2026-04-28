@@ -15,14 +15,6 @@ if ! curl -s http://localhost:11434/api/tags &> /dev/null; then
 fi
 
 echo "✅ Ollama is running"
-
-# Check if OpenClaw is running (optional)
-if openclaw status &> /dev/null 2>&1; then
-    echo "✅ OpenClaw is running (enhanced research enabled)"
-else
-    echo "⚠️  OpenClaw not running (basic research mode)"
-fi
-
 echo ""
 
 # Stop any existing instances

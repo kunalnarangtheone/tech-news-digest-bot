@@ -23,11 +23,6 @@ help:
 run: stop
 	@echo ""
 	@echo "🤖 Starting Tech Digest Bot..."
-	@if ! openclaw status &> /dev/null; then \
-		echo "⚠️  OpenClaw not running (optional features disabled)"; \
-	else \
-		echo "✅ OpenClaw is running"; \
-	fi
 	@echo ""
 	@sleep 1
 	@bash run_bot.sh

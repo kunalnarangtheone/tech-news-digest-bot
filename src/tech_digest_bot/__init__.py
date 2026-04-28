@@ -3,8 +3,17 @@
 This module provides the main bot implementation.
 """
 
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
+from . import ai, bot, config, graph, search
 from .bot import TechDigestBot
 
-__all__ = ["TechDigestBot"]
+__all__ = [
+    "__version__",
+    "ai",
+    "bot",
+    "config",
+    "graph",
+    "search",
+    "TechDigestBot",
+]

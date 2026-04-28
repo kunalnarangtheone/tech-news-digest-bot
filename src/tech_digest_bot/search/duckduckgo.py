@@ -38,7 +38,7 @@ class DuckDuckGoSearch:
         """
         try:
             search_results = self.client.text(
-                keywords=query,
+                query,  # First positional argument
                 max_results=max_results,
                 region="wt-wt",  # Global results
             )

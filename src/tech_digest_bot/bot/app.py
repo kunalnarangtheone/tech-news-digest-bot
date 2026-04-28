@@ -13,8 +13,15 @@ from telegram.ext import (
 
 from ..ai import LLMClient, ResearchService
 from ..config import get_settings
-from ..search import OpenClawCLIClient
 from .handlers import BotHandlers
+
+# Optional DI container support
+try:
+    from ..container import create_container
+    from dependency_injector.wiring import inject, Provide
+    DI_AVAILABLE = True
+except ImportError:
+    DI_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
 
@@ -41,21 +48,18 @@ class TechDigestBot:
             base_url=self.settings.ollama_base_url,
         )
 
-        # Initialize OpenClaw CLI if enabled
-        openclaw_client = None
-        if self.settings.openclaw_enabled:
-            openclaw_client = OpenClawCLIClient()
-
+        # Initialize Research Service with LangChain agent
         self.research_service = ResearchService(
             llm_client=self.llm_client,
-            openclaw_client=openclaw_client,
+            use_agent=self.settings.use_langchain_agent,
+            settings=self.settings,
         )
 
         self.handlers = BotHandlers(research_service=self.research_service)
 
     async def post_init(self, application: Application) -> None:
         """Post-initialization hook."""
-        # Initialize research service (check OpenClaw availability)
+        # Initialize research service (LangChain agent)
         await self.research_service.initialize()
 
     def create_application(self) -> Application:
@@ -99,10 +103,17 @@ class TechDigestBot:
     def run(self) -> None:
         """Start the bot."""
         logger.info("🤖 Starting Tech Digest Bot...")
+        logger.info("=" * 60)
         logger.info("Provider: Ollama (Local)")
         logger.info("Model: %s", self.settings.ollama_model)
         logger.info("Ollama URL: %s", self.settings.ollama_base_url)
-        logger.info("OpenClaw enabled: %s", self.settings.openclaw_enabled)
+        logger.info("LangChain Agent: %s", self.settings.use_langchain_agent)
+        if self.settings.use_langchain_agent:
+            logger.info("  - Neo4j URI: %s", self.settings.neo4j_uri)
+            logger.info(
+                "  - Embedding Model: %s", self.settings.embedding_model
+            )
+        logger.info("=" * 60)
         logger.info("Press Ctrl+C to stop")
 
         # Create and run application
@@ -118,7 +129,12 @@ def main() -> None:
         level=logging.INFO,
     )
 
-    # Create and run bot
+    # Optional: Use DI container if available
+    if DI_AVAILABLE:
+        container = create_container()
+        logger.info("Using dependency injection container")
+
+    # Create and run bot (DI wiring happens automatically if enabled)
     bot = TechDigestBot()
     bot.run()
 

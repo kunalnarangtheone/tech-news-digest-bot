@@ -1,12 +1,12 @@
 [project]
 name = "tech-digest-bot"
 version = "0.3.0"
-description = "AI-powered tech news research bot with OpenClaw integration"
+description = "AI-powered tech news research bot with LangChain agent and Neo4j knowledge graph"
 readme = "README.md"
 requires-python = ">=3.14"
 license = { text = "MIT" }
 authors = [{ name = "Kunal Narang" }]
-keywords = ["ai", "telegram", "bot", "tech-news", "openclaw", "research"]
+keywords = ["ai", "telegram", "bot", "tech-news", "langchain", "neo4j", "knowledge-graph", "research"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -20,12 +20,24 @@ dependencies = [
     "openai>=1.0.0",
     "ddgs>=9.0.0",
     "aiohttp>=3.9.0",
+    # LangChain dependencies
+    "langchain-core>=0.3.0",
+    "langchain-neo4j>=0.2.0",
+    "langchain-ollama>=0.2.0",
+    # Refactoring dependencies
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "dependency-injector>=4.41.0",
+    "jinja2>=3.1.0",
+    "neo4j>=5.14.0",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.0.0",
+    "pytest-mock>=3.10.0",
     "mypy>=1.0.0",
     "ruff>=0.1.0",
 ]

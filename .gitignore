@@ -48,5 +48,15 @@ uv.lock
 .coverage
 htmlcov/
 
+# Data and logs
+data/
+*.db
+*.log
+backups/
+
+# Scripts and verification
+verify_refactoring.py
+scripts/archive/
+
 # Claude
 .claude/

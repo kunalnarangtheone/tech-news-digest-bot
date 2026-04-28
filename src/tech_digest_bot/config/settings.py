@@ -1,64 +1,107 @@
 """Application settings and configuration."""
 
-import os
 from functools import lru_cache
 from typing import Optional
 
-from dotenv import load_dotenv
+from pydantic import Field, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# Load environment variables
-load_dotenv()
+from .constants import (
+    DEFAULT_EMBEDDING_DIMENSION,
+    DEFAULT_EMBEDDING_MODEL,
+    DEFAULT_NEO4J_DATABASE,
+    DEFAULT_NEO4J_URI,
+    DEFAULT_NEO4J_USER,
+    DEFAULT_OLLAMA_MODEL,
+    DEFAULT_OLLAMA_URL,
+)
+from ..exceptions import SettingsValidationError
 
 
-class Settings:
-    """Application configuration settings."""
+class Settings(BaseSettings):
+    """Application configuration settings with Pydantic validation."""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore",
+    )
 
     # Telegram configuration
-    telegram_bot_token: str
-    telegram_channel_id: Optional[str]
-    telegram_alert_chat: Optional[str]
+    telegram_bot_token: str = Field(
+        ...,  # Required
+        description="Telegram bot token from BotFather"
+    )
+    telegram_channel_id: Optional[str] = Field(default=None)
+    telegram_alert_chat: Optional[str] = Field(default=None)
 
     # Ollama (LLM) configuration
-    ollama_base_url: str
-    ollama_model: str
+    ollama_base_url: str = Field(
+        default=DEFAULT_OLLAMA_URL,
+        description="Ollama API base URL"
+    )
+    ollama_model: str = Field(
+        default=DEFAULT_OLLAMA_MODEL,
+        description="Ollama model identifier"
+    )
 
-    # OpenClaw configuration
-    openclaw_gateway_url: str
-    openclaw_enabled: bool
+    # LangChain Agent configuration
+    use_langchain_agent: bool = Field(
+        default=True,
+        description="Enable LangChain agent with Neo4j"
+    )
 
-    def __init__(self) -> None:
-        """Initialize settings from environment variables."""
-        # Telegram
-        self.telegram_bot_token = os.getenv("TELEGRAM_BOT_TOKEN", "")
-        self.telegram_channel_id = os.getenv("TELEGRAM_CHANNEL_ID")
-        self.telegram_alert_chat = os.getenv("TELEGRAM_ALERT_CHAT")
+    # Neo4j Aura configuration
+    neo4j_uri: str = Field(
+        default=DEFAULT_NEO4J_URI,
+        description="Neo4j connection URI"
+    )
+    neo4j_user: str = Field(
+        default=DEFAULT_NEO4J_USER,
+        description="Neo4j username"
+    )
+    neo4j_password: str = Field(
+        default="",
+        description="Neo4j password"
+    )
+    neo4j_database: str = Field(
+        default=DEFAULT_NEO4J_DATABASE,
+        description="Neo4j database name"
+    )
 
-        # Ollama
-        self.ollama_base_url = os.getenv(
-            "OLLAMA_BASE_URL", "http://localhost:11434/v1"
-        )
-        self.ollama_model = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
+    # Embedding configuration
+    embedding_model: str = Field(
+        default=DEFAULT_EMBEDDING_MODEL,
+        description="Embedding model name"
+    )
+    embedding_dimension: int = Field(
+        default=DEFAULT_EMBEDDING_DIMENSION,
+        ge=1,
+        le=4096,
+        description="Embedding vector dimension"
+    )
 
-        # OpenClaw
-        self.openclaw_gateway_url = os.getenv(
-            "OPENCLAW_GATEWAY_URL", "http://localhost:18789"
-        )
-        enabled = os.getenv("OPENCLAW_ENABLED", "true").lower()
-        self.openclaw_enabled = enabled == "true"
+    @model_validator(mode='after')
+    def validate_agent_config(self) -> 'Settings':
+        """Validate Neo4j password when agent is enabled."""
+        if self.use_langchain_agent and not self.neo4j_password:
+            raise SettingsValidationError(
+                "NEO4J_PASSWORD is required when USE_LANGCHAIN_AGENT=true"
+            )
+        return self
 
     def validate(self) -> tuple[bool, list[str]]:
         """
-        Validate required settings.
+        Legacy validate method for backward compatibility.
+
+        Pydantic validation happens automatically on instantiation.
+        This method always returns (True, []) for valid instances.
 
         Returns:
             Tuple of (is_valid, error_messages)
         """
-        errors = []
-
-        if not self.telegram_bot_token:
-            errors.append("TELEGRAM_BOT_TOKEN is required")
-
-        return len(errors) == 0, errors
+        return True, []
 
 
 @lru_cache
