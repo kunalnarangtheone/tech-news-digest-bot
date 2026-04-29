@@ -111,6 +111,43 @@ Use this when:
 
         return documents, metadata
 
+    async def _filter_existing_documents(
+        self, documents: list[Document], metadata: list[dict]
+    ) -> tuple[list[Document], list[dict]]:
+        """Filter out documents with URLs that already exist in Neo4j."""
+        # Extract all URLs
+        urls = [doc.metadata["url"] for doc in documents]
+
+        # Check which URLs already exist
+        driver = self.neo4j_store.get_driver()
+        async with driver.session(database=self.settings.neo4j_database) as session:
+            result = await session.run(
+                """
+                UNWIND $urls AS url
+                MATCH (a:Article {url: url})
+                RETURN a.url AS url
+                """,
+                urls=urls,
+            )
+            existing_urls = {record["url"] async for record in result}
+
+        # Filter to only new documents
+        new_documents = []
+        new_metadata = []
+        skipped_count = 0
+
+        for doc, meta in zip(documents, metadata):
+            if doc.metadata["url"] not in existing_urls:
+                new_documents.append(doc)
+                new_metadata.append(meta)
+            else:
+                skipped_count += 1
+
+        if skipped_count > 0:
+            logger.info(f"Skipping {skipped_count} articles that already exist")
+
+        return new_documents, new_metadata
+
     async def _ingest_documents(
         self, documents: list[Document], metadata: list[dict]
     ):
@@ -121,16 +158,25 @@ Use this when:
         )
 
         try:
+            # Filter out documents with URLs that already exist
+            new_docs, new_metadata = await self._filter_existing_documents(
+                documents, metadata
+            )
+
+            if not new_docs:
+                logger.info("All articles already exist in Neo4j, skipping ingestion")
+                return
+
             # Add to Neo4j
-            logger.info(f"Ingesting {len(documents)} articles to Neo4j...")
-            await self.neo4j_store.add_documents(documents)
+            logger.info(f"Ingesting {len(new_docs)} new articles to Neo4j...")
+            await self.neo4j_store.add_documents(new_docs)
             logger.info("✓ Articles ingested successfully")
 
             # Extract topics and create relationships
             driver = self.neo4j_store.get_driver()
             total_topics = 0
 
-            for article_meta in metadata:
+            for article_meta in new_metadata:
                 topics = await extract_topics_with_llm(
                     article_meta["content"],
                     article_meta["title"],

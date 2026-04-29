@@ -99,6 +99,35 @@ class BotHandlers:
             parse_mode="Markdown",
         )
 
+    async def _is_topic_change(
+        self, user_message: str, history: list[dict[str, str]]
+    ) -> bool:
+        """
+        Detect if the new message is a topic change or genuine follow-up.
+
+        Args:
+            user_message: Current user message
+            history: Conversation history
+
+        Returns:
+            True if this is a new topic, False if it's a follow-up
+        """
+        if not history:
+            return True
+
+        # Get last few user messages to understand the context
+        recent_user_messages = [
+            msg["content"] for msg in history[-4:] if msg["role"] == "user"
+        ]
+
+        if not recent_user_messages:
+            return True
+
+        # Use the research service to detect topic change
+        return await self.research.is_topic_change(
+            user_message, recent_user_messages
+        )
+
     async def handle_message(
         self, update: Update, context: ContextTypes.DEFAULT_TYPE
     ) -> None:
@@ -115,80 +144,58 @@ class BotHandlers:
         # Send typing indicator
         await update.message.chat.send_action("typing")
 
-        # Check if user has conversation history
-        has_history = (
-            user_id in self.conversation_history
-            and len(self.conversation_history[user_id]) > 0
+        # Initialize conversation history if needed
+        if user_id not in self.conversation_history:
+            self.conversation_history[user_id] = []
+
+        # Get current conversation history
+        history = self.conversation_history[user_id]
+
+        logger.info("Processing message from user %d: %s", user_id, user_message)
+
+        # Send initial status message
+        status_msg = await update.message.reply_text(
+            "🔍 *Researching...*\n\n" "Searching for information...",
+            parse_mode="Markdown",
         )
 
-        # Determine if this is a new topic or follow-up question
-        is_followup = has_history and not any(
-            keyword in user_message.lower()
-            for keyword in [
-                "explain",
-                "what is",
-                "tell me about",
-                "research",
-                "learn about",
-            ]
-        )
+        # Detect if this is a topic change
+        is_new_topic = await self._is_topic_change(user_message, history)
 
-        if is_followup:
-            # Answer as follow-up question
-            logger.info(
-                "Follow-up question from user %d: %s", user_id, user_message
-            )
-            response = await self.research.answer_followup(
-                user_message, self.conversation_history[user_id]
-            )
+        if is_new_topic and history:
+            # Topic changed - clear history and start fresh
+            logger.info("Topic change detected, clearing history")
+            self.conversation_history[user_id] = []
+            history = []
 
-            # Update history
-            self.conversation_history[user_id].append(
-                {"role": "user", "content": user_message}
-            )
-            self.conversation_history[user_id].append(
-                {"role": "assistant", "content": response}
-            )
-
+        # Let the LLM decide if it needs to search or can answer from context
+        if history:
+            # Pass conversation history - LLM will decide if it needs new search
+            response = await self.research.answer_followup(user_message, history)
         else:
-            # Research new topic
-            logger.info(
-                "New research request from user %d: %s", user_id, user_message
-            )
-
-            # Send initial message
-            status_msg = await update.message.reply_text(
-                "🔍 *Researching...*\n\n"
-                "Searching the web for information...",
-                parse_mode="Markdown",
-            )
-
-            # Generate digest
+            # New conversation - research the topic
             response = await self.research.research_topic(user_message)
 
-            # Delete status message
-            await status_msg.delete()
+        # Delete status message
+        await status_msg.delete()
 
-            # Initialize or update conversation history
-            if user_id not in self.conversation_history:
-                self.conversation_history[user_id] = []
+        # Update conversation history
+        self.conversation_history[user_id].append(
+            {"role": "user", "content": user_message}
+        )
+        self.conversation_history[user_id].append(
+            {"role": "assistant", "content": response}
+        )
 
-            self.conversation_history[user_id].append(
-                {"role": "user", "content": f"Research: {user_message}"}
-            )
-            self.conversation_history[user_id].append(
-                {"role": "assistant", "content": response}
-            )
+        # Limit history to last 10 messages
+        if len(self.conversation_history[user_id]) > 10:
+            self.conversation_history[user_id] = self.conversation_history[user_id][
+                -10:
+            ]
 
-            # Limit history to last 10 messages
-            if len(self.conversation_history[user_id]) > 10:
-                self.conversation_history[user_id] = self.conversation_history[
-                    user_id
-                ][-10:]
-
-        # Send response
+        # Send response (no parse_mode to avoid markdown parsing errors)
         await update.message.reply_text(
-            response, parse_mode="Markdown", disable_web_page_preview=True
+            response, disable_web_page_preview=True
         )
 
     async def error_handler(

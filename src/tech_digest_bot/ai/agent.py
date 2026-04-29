@@ -108,7 +108,7 @@ class TechIntelligenceAgent:
 
     def _create_system_prompt(self) -> str:
         """Create system prompt for agent."""
-        return """You are a tech research assistant with access to a \
+        return f"""You are a tech research assistant with access to a \
 knowledge graph and web search.
 
 **Available Tools:**
@@ -209,8 +209,7 @@ Research Results:
 Provide a well-structured answer ({AGENT_ANSWER_MIN_WORDS}-{AGENT_ANSWER_MAX_WORDS} words) with:
 - Brief overview (1-2 sentences)
 - Key points in bullet format
-- Relevant URLs as references
-- Use markdown formatting"""
+- Relevant URLs as references"""
 
             chain = prompt | self.llm
             result = await chain.ainvoke({"input": synthesis_prompt})
@@ -242,6 +241,74 @@ Provide a well-structured answer ({AGENT_ANSWER_MIN_WORDS}-{AGENT_ANSWER_MAX_WOR
                 "intermediate_steps": [],
             }
 
+    def _is_raw_search_results(self, content: str) -> bool:
+        """
+        Detect if content is raw search results vs synthesized answer.
+
+        Raw results have patterns like:
+        - "Found X articles and added to knowledge graph"
+        - "**1. Title**\nURL: https://..."
+        - Multiple "URL:" and "Content:" entries
+
+        Args:
+            content: Response content to check
+
+        Returns:
+            True if raw search results, False if synthesized answer
+        """
+        # Check for raw search result patterns
+        raw_indicators = [
+            "Found" in content and "articles and added to knowledge graph" in content,
+            content.count("URL:") >= 3,  # Multiple article URLs
+            content.count("**") >= 4,  # Multiple markdown headers for articles
+            "Content:" in content and content.count("Content:") >= 2,
+        ]
+
+        return any(raw_indicators)
+
+    def _extract_context_from_history(
+        self, conversation_history: list[dict[str, str]]
+    ) -> str:
+        """
+        Extract relevant context from conversation history.
+
+        Intelligently handles:
+        - Raw search results: Extract only summary
+        - Synthesized answers: Keep in full (up to reasonable limit)
+        - User messages: Keep in full
+
+        Args:
+            conversation_history: Previous conversation messages
+
+        Returns:
+            Formatted context string
+        """
+        history_items = []
+
+        for msg in conversation_history[-4:]:
+            content = msg['content']
+
+            if msg['role'] == 'assistant':
+                # Detect if this is raw search results
+                if self._is_raw_search_results(content):
+                    # Extract just the summary line
+                    first_line = content.split('\n')[0]
+                    history_items.append(
+                        f"assistant: {first_line}\n"
+                        "[Detailed search results omitted for brevity]"
+                    )
+                else:
+                    # It's a synthesized answer - keep it but with reasonable limit
+                    if len(content) > 1000:
+                        # Very long synthesized answer - keep first part
+                        content = content[:1000] + "\n[Answer truncated for context]"
+                    history_items.append(f"assistant: {content}")
+            else:
+                # User message - always keep in full
+                history_items.append(f"user: {content}")
+
+        return "\n\n".join(history_items)
+
     async def answer_followup(
         self, question: str, conversation_history: list[dict[str, str]]
     ) -> dict:
@@ -255,12 +322,9 @@ Provide a well-structured answer ({AGENT_ANSWER_MIN_WORDS}-{AGENT_ANSWER_MAX_WOR
         Returns:
             Dict with 'output' (answer) and 'intermediate_steps'
         """
-        # Build context from history
-        history_context = "\n".join(
-            [
-                f"{msg['role']}: {msg['content']}"
-                for msg in conversation_history[-6:]
-            ]
+        # Extract intelligent context from history
+        history_context = self._extract_context_from_history(
+            conversation_history
         )
 
         full_query = f"""Based on this conversation:

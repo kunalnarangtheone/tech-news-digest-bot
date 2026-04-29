@@ -163,6 +163,66 @@ class ResearchService:
             question, conversation_history
         )
 
+    async def is_topic_change(
+        self, new_message: str, recent_user_messages: list[str]
+    ) -> bool:
+        """
+        Detect if the new message represents a topic change.
+
+        Uses LLM to intelligently determine if the user is asking about
+        a different topic or continuing the same conversation.
+
+        Args:
+            new_message: The new user message
+            recent_user_messages: Recent user messages from history
+
+        Returns:
+            True if this is a new topic, False if it's a follow-up
+        """
+        if not recent_user_messages:
+            return True
+
+        # Create context of previous topics
+        previous_context = "\n".join(
+            [f"- {msg}" for msg in recent_user_messages]
+        )
+
+        # Use LLM to detect topic change
+        prompt = f"""Analyze if the new question is about the same topic or a different topic.
+
+Previous questions:
+{previous_context}
+
+New question:
+{new_message}
+
+Is this new question:
+A) A follow-up/clarification about the same topic (e.g., "tell me more", "how does it compare", "what about X aspect")
+B) A completely different topic
+
+Respond with ONLY one word: "SAME" or "DIFFERENT"
+"""
+
+        try:
+            response = await self.llm.generate(
+                prompt=prompt,
+                temperature=0.1,  # Low temperature for deterministic classification
+                max_tokens=10,  # Only need one word
+            )
+            response = response.strip().upper()
+
+            is_different = "DIFFERENT" in response
+            logger.info(
+                f"Topic change detection: {new_message[:50]}... -> "
+                f"{'NEW TOPIC' if is_different else 'FOLLOW-UP'}"
+            )
+            return is_different
+
+        except Exception as e:
+            logger.exception(f"Topic detection failed: {e}")
+            # On error, assume it's a new topic to be safe
+            return True
+
     async def cleanup(self):
         """Cleanup resources (Neo4j connection, etc.)."""
         if self.neo4j_store:
