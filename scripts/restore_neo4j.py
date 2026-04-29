@@ -7,8 +7,9 @@ WARNING: This will clear existing data!
 import os
 import sys
 from pathlib import Path
-from neo4j import GraphDatabase
+
 from dotenv import load_dotenv
+from neo4j import GraphDatabase
 
 load_dotenv()
 
@@ -45,7 +46,7 @@ def restore_from_backup(backup_file: Path):
 
             # Read and execute Cypher statements
             print("\nRestoring from backup...")
-            with open(backup_file, "r", encoding="utf-8") as f:
+            with open(backup_file, encoding="utf-8") as f:
                 cypher_content = f.read()
 
             # Split by semicolon and execute each statement
@@ -77,7 +78,7 @@ def restore_from_backup(backup_file: Path):
             result = session.run("MATCH ()-[r]->() RETURN count(r) as count")
             rel_count = result.single()["count"]
 
-            print(f"\n✓ Restore complete!")
+            print("\n✓ Restore complete!")
             print(f"  - {node_count} nodes")
             print(f"  - {rel_count} relationships")
 

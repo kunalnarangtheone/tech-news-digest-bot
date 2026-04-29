@@ -2,10 +2,10 @@
 
 import logging
 
-from neo4j import AsyncGraphDatabase
 from langchain_core.documents import Document
+from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_neo4j import Neo4jVector
-from langchain_ollama import OllamaEmbeddings
+from neo4j import AsyncGraphDatabase
 
 from ..exceptions import Neo4jConnectionError
 
@@ -17,25 +17,23 @@ class TechDigestNeo4jStore:
 
     def __init__(self, settings):
         """
-        Initialize Neo4j vector store with Ollama embeddings.
+        Initialize Neo4j vector store with HuggingFace embeddings.
 
         Args:
-            settings: Settings object with Neo4j and Ollama configuration
+            settings: Settings object with Neo4j configuration
         """
         self.settings = settings
 
-        # Initialize Ollama embeddings
+        # Initialize HuggingFace embeddings (runs locally, no API needed)
         logger.info(
-            f"Initializing Ollama embeddings with model: "
+            f"Initializing HuggingFace embeddings with model: "
             f"{settings.embedding_model}"
         )
 
-        # For Ollama, we need to use the base URL without /v1 suffix
-        ollama_base = settings.ollama_base_url.replace("/v1", "")
-
-        self.embeddings = OllamaEmbeddings(
-            model=settings.embedding_model,  # nomic-embed-text
-            base_url=ollama_base,
+        self.embeddings = HuggingFaceEmbeddings(
+            model_name=settings.embedding_model,
+            model_kwargs={'device': 'cpu'},
+            encode_kwargs={'normalize_embeddings': True}
         )
 
         # Initialize Neo4j vector store
@@ -77,7 +75,7 @@ class TechDigestNeo4jStore:
 
         except Exception as e:
             logger.error(f"Failed to initialize Neo4j vector store: {e}")
-            raise Neo4jConnectionError(f"Failed to connect to Neo4j: {e}")
+            raise Neo4jConnectionError(f"Failed to connect to Neo4j: {e}") from e
 
     async def similarity_search(
         self, query: str, k: int = 5

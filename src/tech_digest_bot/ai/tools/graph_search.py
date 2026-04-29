@@ -7,9 +7,9 @@ from typing import TYPE_CHECKING
 
 from pydantic import Field
 
-from .base import TechDigestBaseTool, ToolInput
 from ...config.constants import MIN_BM25_SCORE_THRESHOLD, STOP_WORDS
 from ...exceptions import GraphError
+from .base import TechDigestBaseTool, ToolInput
 
 if TYPE_CHECKING:
     from ...graph.neo4j_store import TechDigestNeo4jStore
@@ -40,14 +40,10 @@ Use this when:
     args_schema: type[ToolInput] = GraphSearchInput
 
     # Dependencies
-    neo4j_store: "TechDigestNeo4jStore" = Field(exclude=True)
+    neo4j_store: TechDigestNeo4jStore = Field(exclude=True)
 
     async def _arun(self, query: str) -> str:
         """Execute graph search with filtering."""
-        from ...graph.graph_queries import (
-            get_related_topics,
-            get_related_articles,
-        )
 
         try:
             # Perform hybrid search
@@ -73,7 +69,7 @@ Use this when:
 
         except Exception as e:
             logger.error(f"Graph search failed: {e}")
-            raise GraphError(f"Knowledge graph search failed: {e}")
+            raise GraphError(f"Knowledge graph search failed: {e}") from e
 
     def _filter_results(self, query: str, results: list[dict]) -> list[dict]:
         """Filter results by score and query term matching."""
@@ -114,8 +110,8 @@ Use this when:
     async def _format_results(self, results: list[dict]) -> list[str]:
         """Format results with graph context."""
         from ...graph.graph_queries import (
-            get_related_topics,
             get_related_articles,
+            get_related_topics,
         )
 
         formatted = []

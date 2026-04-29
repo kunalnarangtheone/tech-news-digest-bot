@@ -1,6 +1,6 @@
 # 🤖 Tech Digest Bot - Graph-RAG Intelligence Hub
 
-An AI-powered Telegram bot with **persistent knowledge graph** capabilities powered by LangChain, Neo4j Aura, and Ollama.
+An AI-powered Telegram bot with **persistent knowledge graph** capabilities powered by LangChain, Neo4j Aura, and **Groq**.
 
 ![Python](https://img.shields.io/badge/python-3.14+-blue.svg)
 ![LangChain](https://img.shields.io/badge/LangChain-latest-green.svg)
@@ -24,21 +24,26 @@ An AI-powered Telegram bot with **persistent knowledge graph** capabilities powe
 ### 🔍 **Multi-Source Research**
 - **Priority Chain:**
   1. 🥇 **LangChain Agent** (knowledge graph + BM25 + web search)
-  2. 🥈 **DuckDuckGo + Ollama** (basic fallback)
+  2. 🥈 **DuckDuckGo + Groq** (basic fallback)
 
 ### ⚡ **Performance**
-- **Average Response Time:** 5-10 seconds
+- **Average Response Time:** 3-8 seconds with Groq
 - **Knowledge Graph Queries:** < 1 second
 - **Automatic Caching:** Previously searched topics return instantly
 - **Weekly Backups:** GitHub Actions backup to repository
+
+### 🤖 **Powered by Groq**
+- **Ultra-fast cloud inference** with free tier
+- **llama-3.3-70b-versatile**: High quality responses
+- **No local LLM setup required**
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
 - **Python 3.14+**
-- **Ollama** ([install](https://ollama.ai))
-- **Neo4j Aura** account (free tier - [sign up](https://neo4j.com/cloud/aura/))
+- **Groq API Key** (free) - [Get API key](https://console.groq.com/)
+- **Neo4j Aura** account (free tier) - [Sign up](https://neo4j.com/cloud/aura/)
 - **Telegram Bot Token** from [@BotFather](https://t.me/botfather)
 
 ### Installation
@@ -56,24 +61,17 @@ source .venv/bin/activate
 pip install -e .
 ```
 
-### Pull Ollama Models
-
-```bash
-ollama pull qwen2.5:7b        # LLM for reasoning
-ollama pull nomic-embed-text  # Embeddings (768-dim)
-```
-
 ### Configuration
 
-Create `.env` file:
+Create `.env` file (see `.env.example`):
 
 ```bash
 # Telegram
 TELEGRAM_BOT_TOKEN=your_token_from_botfather
 
-# Ollama
-OLLAMA_BASE_URL=http://localhost:11434/v1
-OLLAMA_MODEL=qwen2.5:7b
+# Groq LLM (get free API key from https://console.groq.com/)
+GROQ_API_KEY=your_groq_api_key
+GROQ_MODEL=llama-3.3-70b-versatile
 
 # LangChain Agent
 USE_LANGCHAIN_AGENT=true
@@ -84,9 +82,9 @@ NEO4J_USER=your_aura_instance_id
 NEO4J_PASSWORD=your_aura_password
 NEO4J_DATABASE=neo4j
 
-# Embeddings
-EMBEDDING_MODEL=nomic-embed-text
-EMBEDDING_DIMENSION=768
+# Embeddings (HuggingFace - auto-downloaded on first run)
+EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
+EMBEDDING_DIMENSION=384
 ```
 
 ### Initialize Neo4j
@@ -98,8 +96,7 @@ python scripts/init_neo4j.py
 ### Run Bot
 
 ```bash
-# Start Ollama (if not running)
-ollama serve
+# The bot uses Groq cloud API - no local LLM needed!
 
 # Run bot
 python -m tech_digest_bot.bot.app
@@ -240,7 +237,7 @@ tech-news-digest-bot/
 │   ├── ai/
 │   │   ├── agent.py          # LangChain agent
 │   │   ├── tools/            # Graph search, web search, explore
-│   │   ├── llm.py            # Ollama LLM client
+│   │   ├── llm.py            # Groq LLM client
 │   │   └── research.py       # Research service
 │   ├── graph/
 │   │   ├── neo4j_store.py    # Neo4j wrapper
@@ -263,7 +260,7 @@ tech-news-digest-bot/
 
 - **[LangChain](https://python.langchain.com/)** - Agent framework
 - **[Neo4j Aura](https://neo4j.com/cloud/aura/)** - Graph database
-- **[Ollama](https://ollama.ai/)** - Local LLM inference
+- **[Groq](https://groq.com/)** - Ultra-fast cloud LLM inference
 - **[Telegram Bot API](https://core.telegram.org/bots/api)** - Bot platform
 
 ## 🤝 Contributing
@@ -281,4 +278,4 @@ MIT
 
 ---
 
-**Built with ❤️ using LangChain, Neo4j Aura, and Ollama**
+**Built with ❤️ using LangChain, Neo4j Aura, and Groq**

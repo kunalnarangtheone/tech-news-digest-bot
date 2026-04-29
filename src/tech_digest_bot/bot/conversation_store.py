@@ -1,11 +1,10 @@
 """Persistent conversation state management using SQLite."""
 
-import sqlite3
 import logging
-from pathlib import Path
-from datetime import datetime, timedelta
+import sqlite3
 from contextlib import contextmanager
-from typing import Optional
+from datetime import datetime, timedelta
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +71,7 @@ class ConversationStore:
         user_id: int,
         role: str,
         content: str,
-        session_id: Optional[str] = None
+        session_id: str | None = None
     ):
         """
         Add message to conversation history.
@@ -106,7 +105,7 @@ class ConversationStore:
         self,
         user_id: int,
         limit: int = 10,
-        session_id: Optional[str] = None
+        session_id: str | None = None
     ) -> list[dict[str, str]]:
         """
         Get conversation history for user.
@@ -143,7 +142,7 @@ class ConversationStore:
                 for row in reversed(rows)
             ]
 
-    def clear_history(self, user_id: int, session_id: Optional[str] = None):
+    def clear_history(self, user_id: int, session_id: str | None = None):
         """
         Clear conversation history.
 

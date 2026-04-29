@@ -54,7 +54,7 @@ Keep them as reference until all integration/e2e tests are written in pytest, th
 uv run pytest tests/unit/ -v
 ```
 
-### Integration Tests (Requires Neo4j, Ollama)
+### Integration Tests (Requires Neo4j, Groq API Key)
 ```bash
 uv run pytest tests/integration/ -v
 ```

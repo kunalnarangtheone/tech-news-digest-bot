@@ -1,14 +1,14 @@
 """Research service combining multiple search providers."""
 
 import logging
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
+from ..config.settings import Settings
 from ..search import DuckDuckGoSearch
 from .llm import LLMClient
 
 if TYPE_CHECKING:
     from .agent import TechIntelligenceAgent
-    from ..config.settings import Settings
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ class ResearchService:
         self,
         llm_client: LLMClient,
         use_agent: bool = True,
-        settings: Optional["Settings"] = None,
+        settings: Settings | None = None,
     ) -> None:
         """
         Initialize research service.
@@ -36,7 +36,7 @@ class ResearchService:
         # LangChain agent integration
         self.use_agent = use_agent
         self.settings = settings
-        self.agent: Optional["TechIntelligenceAgent"] = None
+        self.agent: TechIntelligenceAgent | None = None
         self.neo4j_store = None
 
     async def initialize(self) -> None:

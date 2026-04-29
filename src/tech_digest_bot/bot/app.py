@@ -18,7 +18,6 @@ from .handlers import BotHandlers
 # Optional DI container support
 try:
     from ..container import create_container
-    from dependency_injector.wiring import inject, Provide
     DI_AVAILABLE = True
 except ImportError:
     DI_AVAILABLE = False
@@ -42,10 +41,10 @@ class TechDigestBot:
                 logger.error("  - %s", error)
             sys.exit(1)
 
-        # Initialize Ollama LLM client
+        # Initialize Groq LLM client
         self.llm_client = LLMClient(
-            model=self.settings.ollama_model,
-            base_url=self.settings.ollama_base_url,
+            model=self.settings.groq_model,
+            api_key=self.settings.groq_api_key,
         )
 
         # Initialize Research Service with LangChain agent
@@ -104,9 +103,8 @@ class TechDigestBot:
         """Start the bot."""
         logger.info("🤖 Starting Tech Digest Bot...")
         logger.info("=" * 60)
-        logger.info("Provider: Ollama (Local)")
-        logger.info("Model: %s", self.settings.ollama_model)
-        logger.info("Ollama URL: %s", self.settings.ollama_base_url)
+        logger.info("Provider: Groq (Cloud)")
+        logger.info("Model: %s", self.settings.groq_model)
         logger.info("LangChain Agent: %s", self.settings.use_langchain_agent)
         if self.settings.use_langchain_agent:
             logger.info("  - Neo4j URI: %s", self.settings.neo4j_uri)
@@ -131,7 +129,7 @@ def main() -> None:
 
     # Optional: Use DI container if available
     if DI_AVAILABLE:
-        container = create_container()
+        create_container()
         logger.info("Using dependency injection container")
 
     # Create and run bot (DI wiring happens automatically if enabled)

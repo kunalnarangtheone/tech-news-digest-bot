@@ -1,14 +1,13 @@
 """Pytest fixtures and configuration."""
 
-import pytest
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from tech_digest_bot.config import Settings
-from tech_digest_bot.ai.llm import LLMClient
-from tech_digest_bot.graph.neo4j_store import TechDigestNeo4jStore
-from tech_digest_bot.ai.agent import TechIntelligenceAgent
-from tech_digest_bot.ai.research import ResearchService
+import pytest
 
+from tech_digest_bot.ai.agent import TechIntelligenceAgent
+from tech_digest_bot.ai.llm import LLMClient
+from tech_digest_bot.config import Settings
+from tech_digest_bot.graph.neo4j_store import TechDigestNeo4jStore
 
 # ============================================================================
 # Configuration Fixtures
@@ -20,7 +19,8 @@ def mock_settings() -> Settings:
     with patch.dict('os.environ', {
         'TELEGRAM_BOT_TOKEN': 'test-token-123',
         'NEO4J_PASSWORD': 'test-password',
-        'OLLAMA_MODEL': 'qwen2.5:7b',
+        'GROQ_API_KEY': 'test-groq-key',
+        'GROQ_MODEL': 'llama-3.3-70b-versatile',
         'USE_LANGCHAIN_AGENT': 'false',  # Disable agent by default
     }):
         return Settings()
@@ -39,7 +39,7 @@ def real_settings() -> Settings:
 @pytest.fixture
 def mock_llm_client() -> LLMClient:
     """Mock LLM client with predictable responses."""
-    client = LLMClient(model="test-model")
+    client = LLMClient(model="test-model", api_key="test-key")
 
     # Mock the OpenAI client
     client.client = MagicMock()

@@ -87,7 +87,7 @@ def init_neo4j():
                 print("  ✓ article_fulltext index created (title, content, snippet)")
             except Exception as e:
                 if "already exists" in str(e).lower():
-                    print(f"  ℹ article_fulltext index already exists")
+                    print("  ℹ article_fulltext index already exists")
                 else:
                     print(f"  ⚠ article_fulltext index: {e}")
 
@@ -100,7 +100,7 @@ def init_neo4j():
                 print("  ✓ topic_fulltext index created (name, display_name)")
             except Exception as e:
                 if "already exists" in str(e).lower():
-                    print(f"  ℹ topic_fulltext index already exists")
+                    print("  ℹ topic_fulltext index already exists")
                 else:
                     print(f"  ⚠ topic_fulltext index: {e}")
 
@@ -120,7 +120,7 @@ def init_neo4j():
                 print("  ✓ article_embeddings vector index created (768 dimensions, cosine similarity)")
             except Exception as e:
                 if "already exists" in str(e).lower():
-                    print(f"  ℹ article_embeddings vector index already exists")
+                    print("  ℹ article_embeddings vector index already exists")
                 else:
                     print(f"  ⚠ article_embeddings vector index: {e}")
 

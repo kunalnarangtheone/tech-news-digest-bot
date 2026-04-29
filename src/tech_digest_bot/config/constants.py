@@ -1,14 +1,13 @@
 """Application-wide constants and default values."""
 
-# LLM Configuration
-DEFAULT_OLLAMA_MODEL = "qwen2.5:7b"
-DEFAULT_OLLAMA_URL = "http://localhost:11434/v1"
-DEFAULT_OLLAMA_TEMPERATURE = 0.7
-DEFAULT_OLLAMA_CONTEXT_WINDOW = 8192
+# Groq LLM Configuration
+DEFAULT_GROQ_MODEL = "llama-3.3-70b-versatile"
+DEFAULT_GROQ_URL = "https://api.groq.com/openai/v1"
+DEFAULT_GROQ_TEMPERATURE = 0.7
 
-# Embedding Configuration
-DEFAULT_EMBEDDING_MODEL = "nomic-embed-text"
-DEFAULT_EMBEDDING_DIMENSION = 768
+# Embedding Configuration (HuggingFace)
+DEFAULT_EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+DEFAULT_EMBEDDING_DIMENSION = 384
 
 # Neo4j Configuration
 DEFAULT_NEO4J_URI = "bolt://localhost:7687"

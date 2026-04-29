@@ -4,19 +4,19 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any
 
 from langchain_core.documents import Document
 from pydantic import Field
 
-from .base import TechDigestBaseTool, ToolInput
 from ...config.constants import MAX_SEARCH_RESULTS, SNIPPET_LENGTH
-from ...exceptions import WebSearchError, IngestionError
+from ...exceptions import IngestionError, WebSearchError
+from .base import TechDigestBaseTool, ToolInput
 
 if TYPE_CHECKING:
-    from ...graph.neo4j_store import TechDigestNeo4jStore
     from ...config.settings import Settings
+    from ...graph.neo4j_store import TechDigestNeo4jStore
 
 logger = logging.getLogger(__name__)
 
@@ -46,8 +46,8 @@ Use this when:
     args_schema: type[ToolInput] = WebSearchInput
 
     # Dependencies
-    neo4j_store: "TechDigestNeo4jStore" = Field(exclude=True)
-    settings: "Settings" = Field(exclude=True)
+    neo4j_store: TechDigestNeo4jStore = Field(exclude=True)
+    settings: Settings = Field(exclude=True)
     llm_client: Any = Field(exclude=True)
 
     async def _arun(self, query: str) -> str:
@@ -77,7 +77,7 @@ Use this when:
 
         except Exception as e:
             logger.exception(f"Web search failed: {e}")
-            raise WebSearchError(f"Web search and ingestion failed: {e}")
+            raise WebSearchError(f"Web search and ingestion failed: {e}") from e
 
     def _prepare_documents(
         self, results: list[dict]
@@ -96,7 +96,7 @@ Use this when:
                     "title": result["title"],
                     "url": result["url"],
                     "source": "DuckDuckGo",
-                    "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "timestamp": datetime.now(UTC).isoformat(),
                     "snippet": result["content"][:SNIPPET_LENGTH],
                 },
             )
@@ -136,7 +136,7 @@ Use this when:
         new_metadata = []
         skipped_count = 0
 
-        for doc, meta in zip(documents, metadata):
+        for doc, meta in zip(documents, metadata, strict=False):
             if doc.metadata["url"] not in existing_urls:
                 new_documents.append(doc)
                 new_metadata.append(meta)
@@ -197,7 +197,7 @@ Use this when:
 
         except Exception as e:
             logger.error(f"Ingestion failed: {e}")
-            raise IngestionError(f"Failed to ingest documents: {e}")
+            raise IngestionError(f"Failed to ingest documents: {e}") from e
 
     def _format_response(
         self, results: list[dict], topic_count: int

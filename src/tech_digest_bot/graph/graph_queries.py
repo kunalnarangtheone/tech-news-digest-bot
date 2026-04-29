@@ -1,8 +1,6 @@
 """Custom Cypher queries for graph operations."""
 
 import logging
-from datetime import datetime
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 

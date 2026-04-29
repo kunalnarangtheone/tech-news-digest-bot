@@ -1,21 +1,19 @@
 """Application settings and configuration."""
 
 from functools import lru_cache
-from typing import Optional
 
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from ..exceptions import SettingsValidationError
 from .constants import (
     DEFAULT_EMBEDDING_DIMENSION,
     DEFAULT_EMBEDDING_MODEL,
+    DEFAULT_GROQ_MODEL,
     DEFAULT_NEO4J_DATABASE,
     DEFAULT_NEO4J_URI,
     DEFAULT_NEO4J_USER,
-    DEFAULT_OLLAMA_MODEL,
-    DEFAULT_OLLAMA_URL,
 )
-from ..exceptions import SettingsValidationError
 
 
 class Settings(BaseSettings):
@@ -33,17 +31,17 @@ class Settings(BaseSettings):
         ...,  # Required
         description="Telegram bot token from BotFather"
     )
-    telegram_channel_id: Optional[str] = Field(default=None)
-    telegram_alert_chat: Optional[str] = Field(default=None)
+    telegram_channel_id: str | None = Field(default=None)
+    telegram_alert_chat: str | None = Field(default=None)
 
-    # Ollama (LLM) configuration
-    ollama_base_url: str = Field(
-        default=DEFAULT_OLLAMA_URL,
-        description="Ollama API base URL"
+    # Groq LLM configuration
+    groq_api_key: str = Field(
+        ...,  # Required
+        description="Groq API key from console.groq.com"
     )
-    ollama_model: str = Field(
-        default=DEFAULT_OLLAMA_MODEL,
-        description="Ollama model identifier"
+    groq_model: str = Field(
+        default=DEFAULT_GROQ_MODEL,
+        description="Groq model identifier"
     )
 
     # LangChain Agent configuration
@@ -83,7 +81,7 @@ class Settings(BaseSettings):
     )
 
     @model_validator(mode='after')
-    def validate_agent_config(self) -> 'Settings':
+    def validate_agent_config(self) -> Settings:
         """Validate Neo4j password when agent is enabled."""
         if self.use_langchain_agent and not self.neo4j_password:
             raise SettingsValidationError(

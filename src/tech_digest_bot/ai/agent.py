@@ -4,18 +4,18 @@ import logging
 from typing import TYPE_CHECKING
 
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_ollama import ChatOllama
+from langchain_openai import ChatOpenAI
 
 from ..config.constants import (
-    AGENT_NUM_CTX,
-    AGENT_TEMPERATURE,
-    AGENT_ANSWER_MIN_WORDS,
     AGENT_ANSWER_MAX_WORDS,
+    AGENT_ANSWER_MIN_WORDS,
+    AGENT_TEMPERATURE,
+    DEFAULT_GROQ_URL,
 )
 
 if TYPE_CHECKING:
-    from ..graph.neo4j_store import TechDigestNeo4jStore
     from ..config.settings import Settings
+    from ..graph.neo4j_store import TechDigestNeo4jStore
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +32,8 @@ class TechIntelligenceAgent:
 
     def __init__(
         self,
-        neo4j_store: "TechDigestNeo4jStore",
-        settings: "Settings",
+        neo4j_store: TechDigestNeo4jStore,
+        settings: Settings,
         llm_client,
     ):
         """
@@ -48,17 +48,16 @@ class TechIntelligenceAgent:
         self.settings = settings
         self.llm_client = llm_client
 
-        # Initialize Ollama LLM for agent reasoning
+        # Initialize Groq LLM for agent reasoning
         logger.info(
-            f"Initializing LangChain agent with model: "
-            f"{settings.ollama_model}"
+            f"Initializing LangChain agent with Groq model: {settings.groq_model}"
         )
 
-        self.llm = ChatOllama(
-            model=settings.ollama_model,
-            base_url=settings.ollama_base_url.replace("/v1", ""),
+        self.llm = ChatOpenAI(
+            model=settings.groq_model,
+            base_url=DEFAULT_GROQ_URL,
+            api_key=settings.groq_api_key,
             temperature=AGENT_TEMPERATURE,
-            num_ctx=AGENT_NUM_CTX,
         )
 
         # Create tools
@@ -74,13 +73,13 @@ class TechIntelligenceAgent:
 
     def _create_tools(self):
         """Create LangChain tools for the agent."""
+        from ..config.settings import Settings
+        from ..graph.neo4j_store import TechDigestNeo4jStore
         from .tools import (
+            GraphExploreTool,
             GraphSearchTool,
             WebSearchTool,
-            GraphExploreTool,
         )
-        from ..graph.neo4j_store import TechDigestNeo4jStore
-        from ..config.settings import Settings
 
         # Rebuild models to resolve forward references
         GraphSearchTool.model_rebuild()

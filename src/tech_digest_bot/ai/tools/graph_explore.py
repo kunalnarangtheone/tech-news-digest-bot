@@ -7,8 +7,8 @@ from typing import TYPE_CHECKING
 
 from pydantic import Field
 
-from .base import TechDigestBaseTool, ToolInput
 from ...exceptions import GraphError
+from .base import TechDigestBaseTool, ToolInput
 
 if TYPE_CHECKING:
     from ...graph.neo4j_store import TechDigestNeo4jStore
@@ -41,14 +41,14 @@ Use this when:
     args_schema: type[ToolInput] = GraphExploreInput
 
     # Dependencies
-    neo4j_store: "TechDigestNeo4jStore" = Field(exclude=True)
+    neo4j_store: TechDigestNeo4jStore = Field(exclude=True)
 
     async def _arun(self, query: str) -> str:
         """Execute graph exploration."""
         from ...graph.graph_queries import (
             find_related_topics,
-            get_topic_popularity,
             get_recent_articles_on_topic,
+            get_topic_popularity,
         )
 
         try:
@@ -90,7 +90,7 @@ Use this when:
 
         except Exception as e:
             logger.error(f"Graph exploration failed: {e}")
-            raise GraphError(f"Topic exploration failed: {e}")
+            raise GraphError(f"Topic exploration failed: {e}") from e
 
     def _format_response(
         self,

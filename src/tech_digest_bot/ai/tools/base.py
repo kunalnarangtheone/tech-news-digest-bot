@@ -1,7 +1,7 @@
 """Base classes for LangChain tools."""
 
 from abc import ABC, abstractmethod
-from typing import Any, Optional
+from typing import Any
 
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field

@@ -3,6 +3,7 @@
 from .llm import LLMClient
 from .research import ResearchService
 
+
 # Lazy import to avoid requiring langchain dependencies
 def __getattr__(name):
     if name == "TechIntelligenceAgent":
