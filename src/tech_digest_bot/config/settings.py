@@ -2,17 +2,11 @@
 
 from functools import lru_cache
 
-from pydantic import Field, model_validator
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from ..exceptions import SettingsValidationError
 from .constants import (
-    DEFAULT_EMBEDDING_DIMENSION,
-    DEFAULT_EMBEDDING_MODEL,
     DEFAULT_GROQ_MODEL,
-    DEFAULT_NEO4J_DATABASE,
-    DEFAULT_NEO4J_URI,
-    DEFAULT_NEO4J_USER,
 )
 
 
@@ -39,37 +33,35 @@ class Settings(BaseSettings):
     # LangChain Agent configuration
     use_langchain_agent: bool = Field(
         default=True,
-        description="Enable LangChain agent with Neo4j"
+        description="Enable LangChain agent"
     )
 
-    # Neo4j Aura configuration
-    neo4j_uri: str = Field(
-        default=DEFAULT_NEO4J_URI,
-        description="Neo4j connection URI"
+    # LangGraph multi-agent Q&A configuration
+    use_langgraph: bool = Field(
+        default=True,
+        description="Enable LangGraph autonomous multi-agent system"
     )
-    neo4j_user: str = Field(
-        default=DEFAULT_NEO4J_USER,
-        description="Neo4j username"
+    graph_max_retries: int = Field(
+        default=2,
+        ge=0,
+        le=5,
+        description="Maximum critic retries for low-confidence answers"
     )
-    neo4j_password: str = Field(
-        default="",
-        description="Neo4j password"
-    )
-    neo4j_database: str = Field(
-        default=DEFAULT_NEO4J_DATABASE,
-        description="Neo4j database name"
+    graph_confidence_threshold: float = Field(
+        default=0.6,
+        ge=0.0,
+        le=1.0,
+        description="Minimum confidence score to avoid retry"
     )
 
-    # Embedding configuration
-    embedding_model: str = Field(
-        default=DEFAULT_EMBEDDING_MODEL,
-        description="Embedding model name"
+    # Langfuse observability (optional)
+    langfuse_public_key: str | None = Field(
+        default=None,
+        description="Langfuse public key for tracing (optional)"
     )
-    embedding_dimension: int = Field(
-        default=DEFAULT_EMBEDDING_DIMENSION,
-        ge=1,
-        le=4096,
-        description="Embedding vector dimension"
+    langfuse_secret_key: str | None = Field(
+        default=None,
+        description="Langfuse secret key for tracing (optional)"
     )
 
     # API configuration
@@ -96,15 +88,6 @@ class Settings(BaseSettings):
         description="Session TTL in hours"
     )
 
-    @model_validator(mode='after')
-    def validate_agent_config(self) -> Settings:
-        """Validate Neo4j password when agent is enabled."""
-        if self.use_langchain_agent and not self.neo4j_password:
-            raise SettingsValidationError(
-                "NEO4J_PASSWORD is required when USE_LANGCHAIN_AGENT=true"
-            )
-        return self
-
     def validate(self) -> tuple[bool, list[str]]:
         """
         Legacy validate method for backward compatibility.
@@ -126,4 +109,6 @@ def get_settings() -> Settings:
     Returns:
         Singleton Settings instance
     """
-    return Settings()
+    # Pydantic will raise ValidationError if GROQ_API_KEY is missing
+    # This is caught by the caller
+    return Settings()  # type: ignore[call-arg]

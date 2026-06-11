@@ -1,5 +1,6 @@
 """Session management endpoints."""
 
+
 from fastapi import APIRouter, HTTPException
 
 from tech_digest_bot.api.models import NewSessionRequest, SessionResponse
@@ -11,7 +12,7 @@ router = APIRouter(prefix="/sessions", tags=["sessions"])
 session_store: SessionStore | None = None
 
 
-def set_session_store(store: SessionStore):
+def set_session_store(store: SessionStore) -> None:
     """Set the global session store instance."""
     global session_store
     session_store = store
@@ -63,7 +64,7 @@ async def get_session(session_id: str) -> SessionResponse:
 
 
 @router.delete("/{session_id}")
-async def delete_session(session_id: str) -> dict:
+async def delete_session(session_id: str) -> dict[str, str]:
     """
     Delete a session.
 
@@ -86,7 +87,7 @@ async def delete_session(session_id: str) -> dict:
 
 
 @router.post("/{session_id}/clear")
-async def clear_session(session_id: str) -> dict:
+async def clear_session(session_id: str) -> dict[str, str]:
     """
     Clear session history but keep session alive.
 

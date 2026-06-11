@@ -1,7 +1,6 @@
 """Base classes for LangChain tools."""
 
 from abc import ABC, abstractmethod
-from typing import Any
 
 from langchain_core.tools import BaseTool
 from pydantic import BaseModel, Field
@@ -15,9 +14,6 @@ class ToolInput(BaseModel):
 
 class TechDigestBaseTool(BaseTool, ABC):
     """Base class for Tech Digest tools with dependency injection support."""
-
-    # Common dependencies (injected via constructor)
-    neo4j_store: Any = Field(exclude=True)
 
     class Config:
         """Pydantic config."""

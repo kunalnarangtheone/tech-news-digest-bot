@@ -7,15 +7,12 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 
 from ..config.constants import (
-    AGENT_ANSWER_MAX_WORDS,
-    AGENT_ANSWER_MIN_WORDS,
     AGENT_TEMPERATURE,
     DEFAULT_GROQ_URL,
 )
 
 if TYPE_CHECKING:
     from ..config.settings import Settings
-    from ..graph.neo4j_store import TechDigestNeo4jStore
 
 logger = logging.getLogger(__name__)
 
@@ -24,15 +21,11 @@ class TechIntelligenceAgent:
     """
     LangChain agent for intelligent tech research.
 
-    Uses tool-calling with intelligent routing to decide which tools to use:
-    - search_knowledge_graph: For previously indexed content
-    - search_web_and_ingest: For breaking news and new topics
-    - explore_graph_relationships: For topic discovery
+    Uses web search tool for finding current information.
     """
 
     def __init__(
         self,
-        neo4j_store: TechDigestNeo4jStore,
         settings: Settings,
         llm_client,
     ):
@@ -40,11 +33,9 @@ class TechIntelligenceAgent:
         Initialize the Tech Intelligence Agent.
 
         Args:
-            neo4j_store: Neo4j store instance with BM25 search
             settings: Settings object for configuration
-            llm_client: LLM client for topic extraction
+            llm_client: LLM client
         """
-        self.neo4j_store = neo4j_store
         self.settings = settings
         self.llm_client = llm_client
 
@@ -74,29 +65,18 @@ class TechIntelligenceAgent:
     def _create_tools(self):
         """Create LangChain tools for the agent."""
         from ..config.settings import Settings
-        from ..graph.neo4j_store import TechDigestNeo4jStore
-        from .tools import (
-            GraphExploreTool,
-            GraphSearchTool,
-            WebSearchTool,
-        )
+        from .tools import WebSearchTool
 
         # Rebuild models to resolve forward references
-        GraphSearchTool.model_rebuild()
         WebSearchTool.model_rebuild(_types_namespace={
-            'TechDigestNeo4jStore': TechDigestNeo4jStore,
             'Settings': Settings,
         })
-        GraphExploreTool.model_rebuild()
 
         tools = [
-            GraphSearchTool(neo4j_store=self.neo4j_store),
             WebSearchTool(
-                neo4j_store=self.neo4j_store,
                 settings=self.settings,
                 llm_client=self.llm_client,
             ),
-            GraphExploreTool(neo4j_store=self.neo4j_store),
         ]
 
         logger.info("Created tools:")
@@ -107,30 +87,45 @@ class TechIntelligenceAgent:
 
     def _create_system_prompt(self) -> str:
         """Create system prompt for agent."""
-        return """You are a tech research assistant with access to a \
-knowledge graph and web search.
+        return """You are a tech research assistant with web search capabilities.
 
 **Available Tools:**
-1. search_knowledge_graph - Search previously indexed articles
-2. search_web_and_ingest - Search web and add to knowledge graph
-3. explore_graph_relationships - Explore topic connections
+1. search_web - Search the web for current information
 
-**Tool Selection Strategy:**
-- Start with search_knowledge_graph (fast)
-- If no results, use search_web_and_ingest
-- Use explore_graph_relationships for "what's related" questions
+**CRITICAL FORMATTING REQUIREMENTS - STRICTLY FOLLOW:**
+1. Start directly with a ## Header matching the question topic (e.g., "## Latest AI Developments in 2026")
+   - DO NOT use generic section names like "Introduction", "Overview", or "Summary"
+   - Use the exact topic from the question
+2. Lead with 2-4 bullet points summarizing key findings immediately after the header
+3. Use ### for subsections to organize information by theme/category
+4. Use bullet points (-) for lists, features, developments, or multiple items
+5. Use **bold** for key terms, important names, and emphasis
+6. Use *italics* for new concepts being introduced
+7. Include relevant emojis sparingly in subsection headers (e.g., 🚀 💡 ⚡)
+8. Always cite sources using [source name](URL) inline
 
-**Response Format:**
-- Synthesize information from tool results comprehensively
-- Include URLs as references
+**EXAMPLE STRUCTURE:**
+## Latest AI Developments in 2026
+- Key development 1
+- Key development 2
+- Key development 3
+
+### Recent Breakthroughs 🚀
+- Development 1 with **key detail** from [Source](url)
+- Development 2
+
+### Industry Impact 💡
+Brief explanation with **key terms** emphasized...
+
+**CONTENT REQUIREMENTS:**
+- Synthesize information from search results comprehensively
 - Be thorough and cover all important aspects
-- Use markdown formatting
-- Always cite sources
+- Always cite sources with clickable links
 - Provide detailed, complete answers that fully address the query"""
 
     async def research(self, query: str) -> dict:
         """
-        Research a topic using intelligent tool routing.
+        Research a topic using web search.
 
         Args:
             query: User's question or topic to research
@@ -149,62 +144,33 @@ knowledge graph and web search.
                 ]
             )
 
-            # Strategy: Try graph search first, then web if needed
             intermediate_steps = []
 
-            # Step 1: Try knowledge graph search
-            logger.info("Step 1: Searching knowledge graph...")
-            graph_search = self.tools[0]  # search_knowledge_graph
-            graph_result = await graph_search.ainvoke({"query": query})
+            # Search web
+            logger.info("Searching web...")
+            web_search = self.tools[0]  # search_web
+            web_result = await web_search.ainvoke({"query": query})
             intermediate_steps.append(
                 (
                     type(
                         "Action",
                         (),
                         {
-                            "tool": "search_knowledge_graph",
+                            "tool": "search_web",
                             "tool_input": query,
                         },
                     ),
-                    graph_result,
+                    web_result,
                 )
             )
 
-            # Check if graph search found results
-            if "No relevant articles found" in graph_result:
-                # Step 2: Search web and ingest
-                logger.info(
-                    "Step 2: No graph results, searching web..."
-                )
-                web_search = self.tools[1]  # search_web_and_ingest
-                web_result = await web_search.ainvoke({"query": query})
-                intermediate_steps.append(
-                    (
-                        type(
-                            "Action",
-                            (),
-                            {
-                                "tool": "search_web_and_ingest",
-                                "tool_input": query,
-                            },
-                        ),
-                        web_result,
-                    )
-                )
-
-                # Use web result for synthesis
-                context = web_result
-            else:
-                # Use graph result for synthesis
-                context = graph_result
-
-            # Step 3: Synthesize answer using LLM
-            logger.info("Step 3: Synthesizing answer...")
-            synthesis_prompt = f"""Based on the following research results, \
+            # Synthesize answer using LLM
+            logger.info("Synthesizing answer...")
+            synthesis_prompt = f"""Based on the following search results, \
 provide a comprehensive answer to the question: "{query}"
 
-Research Results:
-{context}
+Search Results:
+{web_result}
 
 Provide a thorough, well-structured answer with:
 - Clear overview
@@ -234,7 +200,6 @@ Be comprehensive - cover all important aspects fully."""
             from .tools import WebSearchTool
 
             web_search = WebSearchTool(
-                neo4j_store=self.neo4j_store,
                 settings=self.settings,
                 llm_client=self.llm_client,
             )

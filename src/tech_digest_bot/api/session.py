@@ -22,7 +22,7 @@ class SessionStore:
         """
         # In-memory cache for fast access
         self._sessions: dict[str, list[dict[str, str]]] = {}
-        self._session_metadata: dict[str, dict] = {}
+        self._session_metadata: dict[str, dict[str, datetime | str | None]] = {}
         self.ttl_hours = ttl_hours
 
         # Optional SQLite persistence
@@ -31,7 +31,7 @@ class SessionStore:
         if use_sqlite:
             self._init_db()
 
-    def _init_db(self):
+    def _init_db(self) -> None:
         """Initialize SQLite database for session persistence."""
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         conn = sqlite3.connect(self.db_path)
@@ -69,7 +69,7 @@ class SessionStore:
         logger.info(f"Created session: {session_id}")
         return session_id
 
-    def get_session(self, session_id: str) -> dict | None:
+    def get_session(self, session_id: str) -> dict[str, datetime | str | int | None] | None:
         """
         Get session metadata.
 
@@ -87,7 +87,7 @@ class SessionStore:
         metadata["message_count"] = len(self._sessions.get(session_id, []))
         return metadata
 
-    def add_message(self, session_id: str, role: str, content: str):
+    def add_message(self, session_id: str, role: str, content: str) -> None:
         """
         Add a message to session history.
 
@@ -133,21 +133,11 @@ class SessionStore:
             List of messages with role and content
         """
         if session_id not in self._sessions:
-            # Try to load from SQLite if enabled
-            if self.use_sqlite:
-                user_id_hash = hash(session_id) % (10**9)
-                history = self.store.get_history(
-                    user_id=user_id_hash, limit=10, session_id=session_id
-                )
-                if history:
-                    self._sessions[session_id] = history
-                    return history
-
             return []
 
         return self._sessions.get(session_id, [])
 
-    def clear_session(self, session_id: str):
+    def clear_session(self, session_id: str) -> None:
         """
         Clear session history but keep session alive.
 
@@ -156,14 +146,9 @@ class SessionStore:
         """
         if session_id in self._sessions:
             self._sessions[session_id] = []
-
-            if self.use_sqlite:
-                user_id_hash = hash(session_id) % (10**9)
-                self.store.clear_history(user_id=user_id_hash, session_id=session_id)
-
             logger.info(f"Cleared session: {session_id}")
 
-    def delete_session(self, session_id: str):
+    def delete_session(self, session_id: str) -> None:
         """
         Delete a session completely.
 
@@ -175,10 +160,6 @@ class SessionStore:
 
         if session_id in self._session_metadata:
             del self._session_metadata[session_id]
-
-        if self.use_sqlite:
-            user_id_hash = hash(session_id) % (10**9)
-            self.store.clear_history(user_id=user_id_hash, session_id=session_id)
 
         logger.info(f"Deleted session: {session_id}")
 
@@ -204,7 +185,7 @@ class SessionStore:
 
         return len(expired_sessions)
 
-    def get_all_sessions(self) -> list[dict]:
+    def get_all_sessions(self) -> list[dict[str, datetime | str | int | None]]:
         """
         Get all active sessions.
 

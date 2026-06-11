@@ -8,8 +8,6 @@ from ..config.constants import (
     DEFAULT_GROQ_MODEL,
     DEFAULT_GROQ_TEMPERATURE,
     DEFAULT_GROQ_URL,
-    DIGEST_MAX_WORDS,
-    DIGEST_MIN_WORDS,
 )
 from ..prompts import get_prompt
 
@@ -89,7 +87,7 @@ Provide a thorough, well-structured answer that covers all the important informa
             if max_tokens is not None:
                 params["max_tokens"] = max_tokens
 
-            response = self.client.chat.completions.create(**params)
+            response = self.client.chat.completions.create(**params)  # type: ignore[arg-type]
 
             answer = response.choices[0].message.content
             if answer:
@@ -135,11 +133,11 @@ Provide a thorough, well-structured answer that covers all the important informa
             if max_tokens is not None:
                 params["max_tokens"] = max_tokens
 
-            response = self.client.chat.completions.create(**params)
+            response = self.client.chat.completions.create(**params)  # type: ignore[arg-type]
 
             answer = response.choices[0].message.content
             if answer:
-                return answer.strip()
+                return str(answer).strip()
             return ""
 
         except Exception as e:
@@ -189,7 +187,7 @@ Provide a thorough, well-structured answer that covers all the important informa
             if max_tokens is not None:
                 params["max_tokens"] = max_tokens
 
-            response = self.client.chat.completions.create(**params)
+            response = self.client.chat.completions.create(**params)  # type: ignore[arg-type]
 
             result = response.choices[0].message.content
             if result:

@@ -8,7 +8,7 @@ import { useEffect, useRef } from "react";
 import { Sparkles } from "lucide-react";
 
 export function ChatInterface() {
-  const { messages, isLoading, sendMessage, newConversation } = useChat();
+  const { messages, isLoading, status, sendMessage, newConversation } = useChat();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when new messages arrive
@@ -32,7 +32,7 @@ export function ChatInterface() {
               </h2>
               <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md">
                 Ask me about any tech topic, programming language, framework, or
-                recent tech news. I'll research and provide you with a comprehensive
+                recent tech news. I&apos;ll research and provide you with a comprehensive
                 digest.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl">
@@ -99,7 +99,30 @@ export function ChatInterface() {
               {messages.map((message, index) => (
                 <ChatMessage key={index} message={message} />
               ))}
-              {isLoading && messages[messages.length - 1]?.role === "user" && (
+              {isLoading && status && (
+                <div className="flex justify-start mb-4">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-2xl px-4 py-3">
+                    <div className="flex items-center gap-2 text-sm text-blue-700 dark:text-blue-300">
+                      <div className="flex gap-1">
+                        <div
+                          className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce"
+                          style={{ animationDelay: "0ms" }}
+                        ></div>
+                        <div
+                          className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce"
+                          style={{ animationDelay: "150ms" }}
+                        ></div>
+                        <div
+                          className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-bounce"
+                          style={{ animationDelay: "300ms" }}
+                        ></div>
+                      </div>
+                      <span>{status}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {isLoading && !status && messages[messages.length - 1]?.role === "user" && (
                 <div className="flex justify-start mb-4">
                   <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl px-4 py-3">
                     <div className="flex gap-1">

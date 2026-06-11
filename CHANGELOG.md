@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Removed
+
+- **Neo4J Integration** - Removed all Neo4J dependencies in preparation for LangGraph migration
+  - Deleted graph module (`neo4j_store.py`, `graph_queries.py`)
+  - Removed graph-based tools (GraphSearchTool, GraphExploreTool)
+  - Removed Neo4J configuration and environment variables
+  - Removed Neo4J scripts (init, backup, restore)
+  - Removed dependencies: `neo4j`, `langchain-neo4j`, `sentence-transformers`, `langchain-huggingface`
+
+- **Knowledge Graph Features** - Temporarily removed pending LangGraph implementation
+  - Vector storage and hybrid search
+  - BM25 full-text search
+  - Topic extraction and relationship graphs
+  - Article ingestion to knowledge graph
+
+### Changed
+
+- **WebSearchTool** - Simplified to web search only (no ingestion)
+- **Agent** - Now uses single web search tool instead of multi-tool routing
+
 ## [0.5.0] - 2026-06-10
 
 ### Added

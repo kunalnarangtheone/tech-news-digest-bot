@@ -37,24 +37,22 @@ class ResearchService:
         self.use_agent = use_agent
         self.settings = settings
         self.agent: TechIntelligenceAgent | None = None
-        self.neo4j_store = None
+
+        # LangGraph multi-agent Q&A system
+        self.use_graph = settings.use_langgraph if settings else False
+        self.qa_graph = None  # Lazy-init in initialize()
 
     async def initialize(self) -> None:
-        """Initialize LangChain agent."""
-        # Initialize LangChain agent with Neo4j
+        """Initialize LangChain agent and LangGraph."""
+        # Initialize LangChain agent
         if self.use_agent and self.settings:
             try:
-                from ..graph.neo4j_store import TechDigestNeo4jStore
                 from .agent import TechIntelligenceAgent
-
-                # Initialize Neo4j vector store
-                logger.info("Initializing Neo4j store for agent...")
-                self.neo4j_store = TechDigestNeo4jStore(self.settings)
 
                 # Initialize LangChain agent
                 logger.info("Initializing LangChain agent...")
                 self.agent = TechIntelligenceAgent(
-                    self.neo4j_store, self.settings, self.llm
+                    self.settings, self.llm
                 )
 
                 logger.info(
@@ -67,13 +65,32 @@ class ResearchService:
                 self.use_agent = False
                 self.agent = None
 
+        # Initialize LangGraph multi-agent system
+        if self.use_graph and self.settings:
+            try:
+                from ..graph import create_qa_graph
+
+                logger.info("Initializing LangGraph Q&A system...")
+                self.qa_graph = create_qa_graph()
+
+                logger.info(
+                    "✓ LangGraph Q&A system initialized successfully"
+                )
+            except Exception as e:
+                logger.exception(
+                    f"Failed to initialize LangGraph: {e}"
+                )
+                self.use_graph = False
+                self.qa_graph = None
+
     async def research_topic(self, topic: str) -> str:
         """
         Research a tech topic and generate a comprehensive answer.
 
         Priority:
-        1. LangChain agent (if enabled) - intelligent tool selection
-        2. Basic DuckDuckGo - fallback
+        1. LangGraph multi-agent system (if enabled) - autonomous quality control
+        2. LangChain agent (if enabled) - intelligent tool selection
+        3. Basic DuckDuckGo - fallback
 
         Args:
             topic: Topic or question to research
@@ -83,7 +100,19 @@ class ResearchService:
         """
         logger.info("Researching topic: %s", topic)
 
-        # Try LangChain agent first
+        # Try LangGraph multi-agent system first
+        if self.use_graph and self.qa_graph:
+            try:
+                logger.info("Using LangGraph multi-agent Q&A system")
+                result = await self.research_topic_with_graph(topic)
+                return result["answer"]
+            except Exception as e:
+                logger.exception(
+                    f"LangGraph system failed: {e}"
+                )
+                # Fall through to agent
+
+        # Try LangChain agent second
         if self.use_agent and self.agent:
             try:
                 logger.info("Using LangChain agent for research")
@@ -223,8 +252,196 @@ Respond with ONLY one word: "SAME" or "DIFFERENT"
             # On error, assume it's a new topic to be safe
             return True
 
+    async def research_topic_with_graph(self, topic: str) -> dict:
+        """
+        Research using LangGraph autonomous multi-agent pipeline.
+
+        Args:
+            topic: Topic or question to research
+
+        Returns:
+            Dict with: answer, citations, confidence, debate_flag, followups
+        """
+        if not self.qa_graph or not self.settings:
+            raise ValueError("LangGraph not initialized")
+
+        logger.info(f"Starting LangGraph research: {topic[:100]}...")
+
+        # Build initial state
+        initial_state = {
+            "question": topic,
+            "conversation_history": [],
+            "question_type": None,
+            "sub_questions": [],
+            "contested": False,
+            "search_results": [],
+            "answer": None,
+            "citations": [],
+            "confidence_score": 0.0,
+            "retry_count": 0,
+            "critic_feedback": None,
+            "advocate_a_position": None,
+            "advocate_b_position": None,
+            "judge_synthesis": None,
+            "debate_flag": False,
+            "followup_questions": [],
+            "_gap_queries": [],
+        }
+
+        # Execute graph with config
+        config = {
+            "max_retries": self.settings.graph_max_retries,
+            "configurable": {
+                "settings": self.settings,
+                "thread_id": "default",
+            },
+        }
+
+        # Add Langfuse tracing if configured
+        if (
+            self.settings.langfuse_public_key
+            and self.settings.langfuse_secret_key
+        ):
+            try:
+                from langfuse.callback import CallbackHandler
+
+                langfuse_handler = CallbackHandler(
+                    public_key=self.settings.langfuse_public_key,
+                    secret_key=self.settings.langfuse_secret_key,
+                )
+                config["callbacks"] = [langfuse_handler]
+                logger.info("Langfuse tracing enabled")
+            except ImportError:
+                logger.warning(
+                    "Langfuse keys configured but langfuse not installed"
+                )
+
+        # Execute graph
+        final_state = await self.qa_graph.ainvoke(initial_state, config)
+
+        logger.info(
+            f"LangGraph completed: confidence={final_state['confidence_score']:.2f}, "
+            f"retries={final_state['retry_count']}, "
+            f"debate={final_state['debate_flag']}"
+        )
+
+        return {
+            "answer": final_state["answer"],
+            "citations": final_state["citations"],
+            "confidence": final_state["confidence_score"],
+            "debate_flag": final_state["debate_flag"],
+            "followups": final_state["followup_questions"],
+            "critic_feedback": final_state.get("critic_feedback"),
+        }
+
+    async def research_topic_with_graph_stream(self, topic: str):
+        """
+        Research using LangGraph with streaming events.
+
+        Args:
+            topic: Topic or question to research
+
+        Yields:
+            Tuples of (event_type, data) where:
+            - event_type: "node_start", "node_end", "complete"
+            - data: Event-specific data (node name, state updates, final result)
+        """
+        if not self.qa_graph or not self.settings:
+            raise ValueError("LangGraph not initialized")
+
+        logger.info(f"Starting LangGraph streaming research: {topic[:100]}...")
+
+        # Build initial state
+        initial_state = {
+            "question": topic,
+            "conversation_history": [],
+            "question_type": None,
+            "sub_questions": [],
+            "contested": False,
+            "search_results": [],
+            "answer": None,
+            "citations": [],
+            "confidence_score": 0.0,
+            "retry_count": 0,
+            "critic_feedback": None,
+            "advocate_a_position": None,
+            "advocate_b_position": None,
+            "judge_synthesis": None,
+            "debate_flag": False,
+            "followup_questions": [],
+            "_gap_queries": [],
+        }
+
+        # Execute graph with config
+        config = {
+            "max_retries": self.settings.graph_max_retries,
+            "configurable": {
+                "settings": self.settings,
+                "thread_id": "default",
+            },
+        }
+
+        # Add Langfuse tracing if configured
+        if (
+            self.settings.langfuse_public_key
+            and self.settings.langfuse_secret_key
+        ):
+            try:
+                from langfuse.callback import CallbackHandler
+
+                langfuse_handler = CallbackHandler(
+                    public_key=self.settings.langfuse_public_key,
+                    secret_key=self.settings.langfuse_secret_key,
+                )
+                config["callbacks"] = [langfuse_handler]
+                logger.info("Langfuse tracing enabled")
+            except ImportError:
+                logger.warning(
+                    "Langfuse keys configured but langfuse not installed"
+                )
+
+        # Stream graph events
+        final_state = None
+        async for event in self.qa_graph.astream_events(initial_state, config, version="v2"):
+            event_type = event.get("event")
+
+            # Node start events
+            if event_type == "on_chain_start":
+                node_name = event.get("name", "")
+                if node_name and node_name != "LangGraph":  # Skip root graph event
+                    logger.debug(f"Node started: {node_name}")
+                    yield ("node_start", {"node": node_name})
+
+            # Node end events with state
+            elif event_type == "on_chain_end":
+                node_name = event.get("name", "")
+                output = event.get("data", {}).get("output", {})
+
+                if node_name and node_name != "LangGraph" and output:
+                    logger.debug(f"Node completed: {node_name}")
+                    yield ("node_end", {"node": node_name, "state": output})
+
+                    # Track final state
+                    if isinstance(output, dict):
+                        final_state = output
+
+        # Return final result
+        if final_state:
+            logger.info(
+                f"LangGraph completed: confidence={final_state.get('confidence_score', 0):.2f}, "
+                f"retries={final_state.get('retry_count', 0)}, "
+                f"debate={final_state.get('debate_flag', False)}"
+            )
+
+            yield ("complete", {
+                "answer": final_state.get("answer"),
+                "citations": final_state.get("citations", []),
+                "confidence": final_state.get("confidence_score", 0.0),
+                "debate_flag": final_state.get("debate_flag", False),
+                "followups": final_state.get("followup_questions", []),
+                "critic_feedback": final_state.get("critic_feedback"),
+            })
+
     async def cleanup(self):
-        """Cleanup resources (Neo4j connection, etc.)."""
-        if self.neo4j_store:
-            await self.neo4j_store.close()
-            logger.info("Neo4j store closed")
+        """Cleanup resources."""
+        pass

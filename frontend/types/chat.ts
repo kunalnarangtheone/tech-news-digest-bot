@@ -22,6 +22,11 @@ export interface SessionResponse {
 }
 
 export interface SSEEvent {
-  type: "session" | "status" | "token" | "done" | "error";
-  content: string;
+  type: "session" | "status" | "token" | "done" | "error" | "metadata";
+  content: string | {
+    citations?: string[];
+    confidence?: number;
+    debate_flag?: boolean;
+    followups?: string[];
+  };
 }

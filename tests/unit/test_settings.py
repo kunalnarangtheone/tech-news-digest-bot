@@ -29,15 +29,6 @@ class TestSettings:
 
         assert "groq_api_key" in str(exc.value).lower()
 
-    def test_agent_requires_neo4j_password(self, monkeypatch):
-        """Test Neo4j password required when agent enabled."""
-        monkeypatch.setenv("GROQ_API_KEY", "test-groq-key")
-        monkeypatch.setenv("USE_LANGCHAIN_AGENT", "true")
-        monkeypatch.setenv("NEO4J_PASSWORD", "")
-
-        with pytest.raises((ValidationError, SettingsValidationError)):
-            Settings()
-
     def test_default_values(self, monkeypatch):
         """Test default configuration values."""
         monkeypatch.setenv("GROQ_API_KEY", "test-groq-key")
@@ -45,7 +36,6 @@ class TestSettings:
 
         settings = Settings()
         assert settings.groq_model == "llama-3.3-70b-versatile"
-        assert settings.embedding_dimension == 384
         assert settings.use_langchain_agent is False
         assert settings.api_host == "0.0.0.0"
         assert settings.api_port == 8000
@@ -54,13 +44,9 @@ class TestSettings:
     def test_type_coercion(self, monkeypatch):
         """Test Pydantic type coercion."""
         monkeypatch.setenv("GROQ_API_KEY", "test-groq-key")
-        monkeypatch.setenv("EMBEDDING_DIMENSION", "1024")  # String
         monkeypatch.setenv("USE_LANGCHAIN_AGENT", "true")  # String
-        monkeypatch.setenv("NEO4J_PASSWORD", "test-pass")
 
         settings = Settings()
-        assert isinstance(settings.embedding_dimension, int)
-        assert settings.embedding_dimension == 1024
         assert settings.use_langchain_agent is True
 
     def test_api_configuration(self, monkeypatch):

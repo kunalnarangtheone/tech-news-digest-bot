@@ -1,6 +1,7 @@
 """Prompt template loader using Jinja2."""
 
 from pathlib import Path
+from typing import Any
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
@@ -16,7 +17,7 @@ _env = Environment(
 )
 
 
-def render_prompt(template_name: str, **context) -> str:
+def render_prompt(template_name: str, **context: Any) -> str:
     """
     Render a prompt template with context.
 
@@ -36,7 +37,7 @@ def render_digest_prompt(topic: str, context: str) -> str:
     return render_prompt("digest_generation.jinja2", topic=topic, context=context)
 
 
-def render_followup_prompt(question: str, history: list[dict]) -> str:
+def render_followup_prompt(question: str, history: list[dict[str, Any]]) -> str:
     """Render follow-up question prompt."""
     return render_prompt("followup_answer.jinja2", question=question, history=history)
 

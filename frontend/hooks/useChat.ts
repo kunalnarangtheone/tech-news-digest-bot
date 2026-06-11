@@ -12,6 +12,7 @@ import type { Message } from "@/types/chat";
 export function useChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [status, setStatus] = useState<string>("");
   const [sessionId, setSessionIdState] = useState<string | null>(() =>
     getSessionId()
   );
@@ -53,23 +54,38 @@ export function useChat() {
         })) {
           if (event.type === "session") {
             // Update session ID if server returned a new one
-            if (event.content !== currentSessionId) {
-              currentSessionId = event.content;
-              setSessionId(currentSessionId);
-              setSessionIdState(currentSessionId);
+            if (typeof event.content === "string" && event.content !== currentSessionId) {
+              const newSessionId: string = event.content;
+              currentSessionId = newSessionId;
+              setSessionId(newSessionId);
+              setSessionIdState(newSessionId);
+            }
+          } else if (event.type === "status") {
+            // Update status message to show progress
+            if (typeof event.content === "string") {
+              setStatus(event.content);
             }
           } else if (event.type === "token") {
-            assistantContent += event.content;
-            setMessages((prev) => {
-              const updated = [...prev];
-              updated[updated.length - 1] = {
-                role: "assistant",
-                content: assistantContent,
-              };
-              return updated;
-            });
+            // Clear status when tokens start arriving
+            setStatus("");
+            if (typeof event.content === "string") {
+              assistantContent += event.content;
+              setMessages((prev) => {
+                const updated = [...prev];
+                updated[updated.length - 1] = {
+                  role: "assistant",
+                  content: assistantContent,
+                };
+                return updated;
+              });
+            }
+          } else if (event.type === "metadata") {
+            // Handle metadata (citations, confidence, etc.)
+            // For now, just log it - could be displayed in the UI later
+            console.log("Response metadata:", event.content);
           } else if (event.type === "error") {
             console.error("Error from server:", event.content);
+            setStatus("");
             setMessages((prev) => {
               const updated = [...prev];
               updated[updated.length - 1] = {
@@ -78,6 +94,9 @@ export function useChat() {
               };
               return updated;
             });
+          } else if (event.type === "done") {
+            // Clear status on completion
+            setStatus("");
           }
         }
       } catch (error) {
@@ -92,6 +111,7 @@ export function useChat() {
         });
       } finally {
         setIsLoading(false);
+        setStatus("");
       }
     },
     [sessionId]
@@ -108,11 +128,13 @@ export function useChat() {
     clearSessionId();
     setSessionIdState(null);
     setMessages([]);
+    setStatus("");
   }, [sessionId]);
 
   return {
     messages,
     isLoading,
+    status,
     sendMessage,
     newConversation,
   };

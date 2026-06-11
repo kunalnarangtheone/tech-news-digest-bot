@@ -5,7 +5,6 @@ from dependency_injector import containers, providers
 from .ai.llm import LLMClient
 from .ai.research import ResearchService
 from .config import get_settings
-from .graph.neo4j_store import TechDigestNeo4jStore
 
 
 class ApplicationContainer(containers.DeclarativeContainer):
@@ -19,12 +18,6 @@ class ApplicationContainer(containers.DeclarativeContainer):
         LLMClient,
         model=config.provided.groq_model,
         api_key=config.provided.groq_api_key,
-    )
-
-    # Neo4j Store (lazy initialization for agent)
-    neo4j_store = providers.Singleton(
-        TechDigestNeo4jStore,
-        settings=config,
     )
 
     # Research Service

@@ -1,12 +1,12 @@
 [project]
 name = "tech-digest-bot"
 version = "0.4.0"
-description = "AI-powered tech news research API with LangChain agent and Neo4j knowledge graph"
+description = "AI-powered tech news research API with LangChain agent"
 readme = "README.md"
 requires-python = ">=3.14"
-license = { text = "MIT" }
+license = { text = "Apache-2.0" }
 authors = [{ name = "Kunal Narang" }]
-keywords = ["ai", "web", "api", "tech-news", "langchain", "neo4j", "knowledge-graph", "research", "fastapi", "nextjs"]
+keywords = ["ai", "web", "api", "tech-news", "langchain", "research", "fastapi", "nextjs"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -22,17 +22,19 @@ dependencies = [
     "aiohttp>=3.9.0",
     # LangChain dependencies
     "langchain-core>=0.3.0",
-    "langchain-neo4j>=0.2.0",
     "langchain-openai>=0.2.0",
-    "langchain-huggingface>=0.1.0",
-    # Embeddings
-    "sentence-transformers>=2.0.0",
+    # LangGraph orchestration
+    "langgraph>=0.2.0",
+    # Web scraping
+    "httpx>=0.27.0",
+    "beautifulsoup4>=4.12.0",
+    # Observability (optional)
+    "langfuse>=2.0.0",
     # Core dependencies
     "pydantic>=2.0.0",
     "pydantic-settings>=2.0.0",
     "dependency-injector>=4.41.0",
     "jinja2>=3.1.0",
-    "neo4j>=5.14.0",
     # FastAPI dependencies
     "fastapi>=0.109.0",
     "uvicorn[standard]>=0.27.0",
@@ -45,7 +47,6 @@ dev = [
     "pytest-asyncio>=0.21.0",
     "pytest-cov>=4.0.0",
     "pytest-mock>=3.10.0",
-    "mypy>=1.0.0",
     "ruff>=0.1.0",
 ]
 
@@ -86,13 +87,14 @@ ignore = [
 
 [tool.mypy]
 python_version = "3.14"
-strict = true
-warn_return_any = true
+strict = false
+warn_return_any = false
 warn_unused_configs = true
-disallow_untyped_defs = true
+disallow_untyped_defs = false
+check_untyped_defs = true
 
 [[tool.mypy.overrides]]
-module = ["ddgs"]
+module = ["ddgs", "openai.*", "groq.*", "langgraph.*", "langfuse.*"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

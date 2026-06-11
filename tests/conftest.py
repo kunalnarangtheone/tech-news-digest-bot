@@ -7,7 +7,6 @@ import pytest
 from tech_digest_bot.ai.agent import TechIntelligenceAgent
 from tech_digest_bot.ai.llm import LLMClient
 from tech_digest_bot.config import Settings
-from tech_digest_bot.graph.neo4j_store import TechDigestNeo4jStore
 
 # ============================================================================
 # Configuration Fixtures
@@ -17,7 +16,6 @@ from tech_digest_bot.graph.neo4j_store import TechDigestNeo4jStore
 def mock_settings() -> Settings:
     """Mock settings for testing (no validation)."""
     with patch.dict('os.environ', {
-        'NEO4J_PASSWORD': 'test-password',
         'GROQ_API_KEY': 'test-groq-key',
         'GROQ_MODEL': 'llama-3.3-70b-versatile',
         'USE_LANGCHAIN_AGENT': 'false',  # Disable agent by default
@@ -58,44 +56,11 @@ def mock_llm_client() -> LLMClient:
 
 
 # ============================================================================
-# Neo4j Fixtures
-# ============================================================================
-
-@pytest.fixture
-def mock_neo4j_store(mock_settings) -> TechDigestNeo4jStore:
-    """Mock Neo4j store (no real connection)."""
-    store = MagicMock(spec=TechDigestNeo4jStore)
-    store.settings = mock_settings
-
-    # Mock search methods
-    store.hybrid_search = AsyncMock(return_value=[
-        {
-            "id": "test-article-1",
-            "title": "Test Article",
-            "url": "https://example.com",
-            "content": "Test content",
-            "snippet": "Test snippet",
-            "bm25_score": 5.0,
-        }
-    ])
-
-    store.bm25_search = AsyncMock(return_value=[])
-    store.add_documents = AsyncMock(return_value=["doc-id-1", "doc-id-2"])
-
-    # Mock driver
-    mock_driver = AsyncMock()
-    store.get_driver = MagicMock(return_value=mock_driver)
-    store.close = AsyncMock()
-
-    return store
-
-
-# ============================================================================
 # Agent Fixtures
 # ============================================================================
 
 @pytest.fixture
-def mock_agent(mock_neo4j_store, mock_settings, mock_llm_client):
+def mock_agent(mock_settings, mock_llm_client):
     """Mock agent with mocked dependencies."""
     agent = MagicMock(spec=TechIntelligenceAgent)
 

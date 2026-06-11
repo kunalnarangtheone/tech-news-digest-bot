@@ -44,24 +44,9 @@ class WebSearchError(SearchError):
     pass
 
 
-# Graph/Neo4j Errors
+# Graph Errors
 class GraphError(TechDigestBotError):
     """Base exception for graph database errors."""
-    pass
-
-
-class Neo4jConnectionError(GraphError):
-    """Raised when cannot connect to Neo4j."""
-    pass
-
-
-class Neo4jQueryError(GraphError):
-    """Raised when Neo4j query fails."""
-    pass
-
-
-class EmbeddingError(GraphError):
-    """Raised when embedding generation fails."""
     pass
 
 
@@ -89,9 +74,4 @@ class ResearchError(TechDigestBotError):
 
 class NoResultsError(ResearchError):
     """Raised when no results found for query."""
-    pass
-
-
-class IngestionError(ResearchError):
-    """Raised when cannot ingest content to graph."""
     pass

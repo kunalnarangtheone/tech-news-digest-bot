@@ -520,12 +520,10 @@ query ─┼→ research_2 ─┼→ synthesize
 - Works across paraphrased queries
 
 ```python
-from langchain_redis import RedisSemanticCache
+from langchain_redis import RedisCache
 
-cache = RedisSemanticCache(
-    redis_url="redis://localhost:6379",
-    embedding=embeddings,
-    threshold=0.85
+cache = RedisCache(
+    redis_url="redis://localhost:6379"
 )
 llm.cache = cache
 ```
@@ -617,9 +615,8 @@ def get_llm(provider: str):
 **Advantages:**
 1. True open-source (Apache 2.0)
 2. GraphRAG-optimized
-3. Vector search built-in
-4. Cypher-compatible
-5. Simple backup (tar volumes)
+3. Cypher-compatible
+4. Simple backup (tar volumes)
 
 **Source:** [FalkorDB vs Neo4j](https://www.falkordb.com/blog/falkordb-vs-neo4j-for-ai-applications/)
 

@@ -1,11 +1,12 @@
 """Prompt management utilities."""
 
 from pathlib import Path
+from typing import Any
 
 import yaml
 
 
-def load_prompt(prompt_name: str) -> tuple[str, dict]:
+def load_prompt(prompt_name: str) -> tuple[str, dict[str, Any]]:
     """
     Load a prompt from a .prompt.md file.
 

@@ -47,7 +47,7 @@ async def lifespan(app: FastAPI):
         settings=settings,
     )
 
-    # Initialize research service (Neo4j connections, etc.)
+    # Initialize research service
     await research_service.initialize()
 
     logger.info(

@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Tech Digest AI",
-  description: "AI-powered tech news research assistant",
+  title: "AI adversarial chatbot",
+  description: "An adversarial AI chatbot assistant",
 };
 
 export default function RootLayout({
