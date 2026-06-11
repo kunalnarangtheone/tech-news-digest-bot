@@ -28,68 +28,68 @@ export function ChatInterface() {
                 <Sparkles className="h-12 w-12 text-blue-600 dark:text-blue-400" />
               </div>
               <h2 className="text-2xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                Welcome to Tech Digest AI
+                Welcome to AI Adversarial Chatbot
               </h2>
               <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md">
-                Ask me about any tech topic, programming language, framework, or
-                recent tech news. I&apos;ll research and provide you with a comprehensive
-                digest.
+                I analyze tech topics from multiple perspectives using an adversarial
+                research approach. Get balanced insights with pros, cons, and different
+                viewpoints on any technology decision.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-2xl">
                 <button
-                  onClick={() => sendMessage("What is Rust programming language?")}
+                  onClick={() => sendMessage("Should I choose Rust or Go for my backend?")}
                   className="text-left p-4 rounded-xl border border-gray-200 dark:border-gray-800
                            hover:border-blue-500 dark:hover:border-blue-500 hover:bg-white dark:hover:bg-gray-900
                            transition-all duration-200 group"
                 >
                   <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
-                    What is Rust?
+                    Rust or Go for Backend?
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-500">
-                    Learn about the Rust programming language
+                    Compare pros and cons from different perspectives
                   </div>
                 </button>
                 <button
                   onClick={() =>
-                    sendMessage("Explain Next.js App Router vs Pages Router")
+                    sendMessage("React vs Vue.js: Which should I choose?")
                   }
                   className="text-left p-4 rounded-xl border border-gray-200 dark:border-gray-800
                            hover:border-blue-500 dark:hover:border-blue-500 hover:bg-white dark:hover:bg-gray-900
                            transition-all duration-200 group"
                 >
                   <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
-                    Next.js App vs Pages Router
+                    React vs Vue.js?
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-500">
-                    Compare Next.js routing approaches
+                    Analyze tradeoffs from multiple viewpoints
                   </div>
                 </button>
                 <button
                   onClick={() =>
-                    sendMessage("What are the latest AI developments in 2026?")
+                    sendMessage("Is serverless architecture right for my project?")
                   }
                   className="text-left p-4 rounded-xl border border-gray-200 dark:border-gray-800
                            hover:border-blue-500 dark:hover:border-blue-500 hover:bg-white dark:hover:bg-gray-900
                            transition-all duration-200 group"
                 >
                   <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
-                    Latest AI News
+                    Serverless Architecture?
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-500">
-                    Discover recent AI breakthroughs
+                    Evaluate benefits and drawbacks from different angles
                   </div>
                 </button>
                 <button
-                  onClick={() => sendMessage("Compare React vs Vue.js in 2026")}
+                  onClick={() => sendMessage("Microservices vs Monolithic architecture?")}
                   className="text-left p-4 rounded-xl border border-gray-200 dark:border-gray-800
                            hover:border-blue-500 dark:hover:border-blue-500 hover:bg-white dark:hover:bg-gray-900
                            transition-all duration-200 group"
                 >
                   <div className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-1">
-                    React vs Vue.js
+                    Microservices vs Monolith?
                   </div>
                   <div className="text-xs text-gray-500 dark:text-gray-500">
-                    Framework comparison
+                    Weigh competing perspectives and real-world tradeoffs
                   </div>
                 </button>
               </div>
@@ -97,7 +97,7 @@ export function ChatInterface() {
           ) : (
             <>
               {messages.map((message, index) => (
-                <ChatMessage key={index} message={message} />
+                message.content ? <ChatMessage key={index} message={message} /> : null
               ))}
               {isLoading && status && (
                 <div className="flex justify-start mb-4">
@@ -118,26 +118,6 @@ export function ChatInterface() {
                         ></div>
                       </div>
                       <span>{status}</span>
-                    </div>
-                  </div>
-                </div>
-              )}
-              {isLoading && !status && messages[messages.length - 1]?.role === "user" && (
-                <div className="flex justify-start mb-4">
-                  <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl px-4 py-3">
-                    <div className="flex gap-1">
-                      <div
-                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                        style={{ animationDelay: "0ms" }}
-                      ></div>
-                      <div
-                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                        style={{ animationDelay: "150ms" }}
-                      ></div>
-                      <div
-                        className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                        style={{ animationDelay: "300ms" }}
-                      ></div>
                     </div>
                   </div>
                 </div>
