@@ -1,8 +1,10 @@
-# 🤖 Tech Digest Bot - Graph-RAG Intelligence Hub
+# 🤖 Tech Digest AI - Graph-RAG Intelligence Hub
 
-An AI-powered Telegram bot with **persistent knowledge graph** capabilities powered by LangChain, Neo4j Aura, and **Groq**.
+An AI-powered web application with **persistent knowledge graph** capabilities powered by LangChain, Neo4j Aura, FastAPI, Next.js, and **Groq**.
 
 ![Python](https://img.shields.io/badge/python-3.14+-blue.svg)
+![FastAPI](https://img.shields.io/badge/FastAPI-latest-green.svg)
+![Next.js](https://img.shields.io/badge/Next.js-16+-black.svg)
 ![LangChain](https://img.shields.io/badge/LangChain-latest-green.svg)
 ![Neo4j](https://img.shields.io/badge/Neo4j-Aura-blue.svg)
 ![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)
@@ -30,7 +32,15 @@ An AI-powered Telegram bot with **persistent knowledge graph** capabilities powe
 - **Average Response Time:** 3-8 seconds with Groq
 - **Knowledge Graph Queries:** < 1 second
 - **Automatic Caching:** Previously searched topics return instantly
+- **Streaming Responses:** Real-time SSE for progressive rendering
 - **Weekly Backups:** GitHub Actions backup to repository
+
+### 🌐 **Modern Web Stack**
+- **FastAPI Backend:** RESTful API with SSE streaming
+- **Next.js Frontend:** React with Server-Side Rendering
+- **Vercel AI SDK:** Chat interface with streaming support
+- **Tailwind CSS:** Modern, responsive UI
+- **Session Management:** Persistent conversations
 
 ### 🤖 **Powered by Groq**
 - **Ultra-fast cloud inference** with free tier
@@ -42,9 +52,9 @@ An AI-powered Telegram bot with **persistent knowledge graph** capabilities powe
 ### Prerequisites
 
 - **Python 3.14+**
+- **Node.js 20+** and npm (Next.js requirement)
 - **Groq API Key** (free) - [Get API key](https://console.groq.com/)
 - **Neo4j Aura** account (free tier) - [Sign up](https://neo4j.com/cloud/aura/)
-- **Telegram Bot Token** from [@BotFather](https://t.me/botfather)
 
 ### Installation
 
@@ -53,22 +63,23 @@ An AI-powered Telegram bot with **persistent knowledge graph** capabilities powe
 git clone https://github.com/yourusername/tech-news-digest-bot.git
 cd tech-news-digest-bot
 
-# Create virtual environment
+# Install backend dependencies
 python -m venv .venv
 source .venv/bin/activate
-
-# Install dependencies
 pip install -e .
+
+# Install frontend dependencies
+cd frontend
+npm install
 ```
 
 ### Configuration
 
-Create `.env` file (see `.env.example`):
+#### Backend (.env)
+
+Create `.env` file in the root directory:
 
 ```bash
-# Telegram
-TELEGRAM_BOT_TOKEN=your_token_from_botfather
-
 # Groq LLM (get free API key from https://console.groq.com/)
 GROQ_API_KEY=your_groq_api_key
 GROQ_MODEL=llama-3.3-70b-versatile
@@ -85,6 +96,20 @@ NEO4J_DATABASE=neo4j
 # Embeddings (HuggingFace - auto-downloaded on first run)
 EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
 EMBEDDING_DIMENSION=384
+
+# API Configuration
+API_HOST=0.0.0.0
+API_PORT=8000
+CORS_ORIGINS=["http://localhost:3000"]
+SESSION_TTL_HOURS=24
+```
+
+#### Frontend (frontend/.env.local)
+
+Create `frontend/.env.local`:
+
+```bash
+NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
 ### Initialize Neo4j
@@ -93,189 +118,268 @@ EMBEDDING_DIMENSION=384
 python scripts/init_neo4j.py
 ```
 
-### Run Bot
+### Run Application
+
+#### Option 1: Docker (Recommended)
+
+**Fastest way to get started:**
 
 ```bash
-# The bot uses Groq cloud API - no local LLM needed!
+# Copy environment template
+cp .env.docker .env
 
-# Run bot
-python -m tech_digest_bot.bot.app
+# Edit .env and add your API keys
+nano .env
+
+# Start with Docker Compose
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
 ```
+
+Then open http://localhost:3000 in your browser.
+
+See [Docker Deployment Guide](docs/DOCKER.md) for details.
+
+#### Option 2: Development Mode
+
+**Terminal 1 - Backend:**
+```bash
+uvicorn tech_digest_bot.api.main:app --reload
+```
+
+**Terminal 2 - Frontend:**
+```bash
+cd frontend
+npm run dev
+```
+
+Then open http://localhost:3000 in your browser.
+
+#### Option 3: Using Makefile
+
+```bash
+# Start backend
+make run-api
+
+# Start frontend (in new terminal)
+make run-frontend
+```
+
+### API Documentation
+
+Once the backend is running, visit:
+- **Swagger UI:** http://localhost:8000/docs
+- **ReDoc:** http://localhost:8000/redoc
+- **Health Check:** http://localhost:8000/api/health
 
 ## 📖 Usage
 
-### Telegram Commands
+### Web Interface
 
-```
-/start  - Welcome message
-/help   - Show help
-/new    - Start new conversation
-```
+1. Open http://localhost:3000
+2. Type your tech question or click an example prompt
+3. Watch the AI research and stream the response in real-time
+4. Click "New Chat" to start a fresh conversation
 
-### Example Conversations
+### API Usage
 
-**Basic Query:**
-```
-User: What is Rust programming language?
-
-Bot: [Comprehensive answer with]:
-- Overview of Rust features
-- Memory safety model
-- Performance characteristics
-- Use cases
-- Source URLs (3-5 references)
-```
-
-**Follow-up Question:**
-```
-User: How does it compare to Python?
-
-Bot: [Context-aware comparison]:
-- Rust: Systems programming, memory safety, performance
-- Python: High-level, ease of use, GC
-- Trade-offs and use case recommendations
-```
-
-## 🧪 Testing
-
-### Run All Tests
-
+**Non-streaming:**
 ```bash
-# Comprehensive end-to-end tests
-python scripts/test_end_to_end.py
+curl -X POST http://localhost:8000/api/chat \
+  -H "Content-Type: application/json" \
+  -d '{"message": "What is Rust programming language?"}'
 ```
 
-**Expected Results:**
-```
-Total Tests: 17
-✅ Passed: 17
-❌ Failed: 0
-Success Rate: 100.0%
-```
-
-### Test Individual Components
-
+**Streaming (SSE):**
 ```bash
-# Neo4j connection
-python scripts/test_neo4j_connection.py
-
-# Graph queries + BM25
-python scripts/test_hybrid_search.py
-
-# LangChain tools
-python scripts/test_langchain_tools.py
-
-# Agent reasoning
-python scripts/test_agent.py
-
-# Bot integration
-python scripts/test_bot_integration.py
+curl -N -X POST http://localhost:8000/api/chat/stream \
+  -H "Content-Type: application/json" \
+  -d '{"message": "Explain Next.js App Router"}'
 ```
 
-## 📊 Knowledge Graph Schema
-
-```cypher
-// Article nodes
-(:Article {
-    id: STRING,
-    url: STRING (unique),
-    title: STRING,
-    content: TEXT,
-    snippet: STRING,
-    timestamp: DATETIME
-})
-
-// Topic nodes
-(:Topic {
-    id: STRING,
-    name: STRING (unique, lowercase),
-    display_name: STRING,
-    article_count: INT
-})
-
-// Relationships
-(:Article)-[:DISCUSSES {relevance: FLOAT}]->(:Topic)
-(:Topic)-[:RELATED_TO {weight: INT, strength: FLOAT}]->(:Topic)
-```
-
-## 🎯 Performance Benchmarks
-
-| Metric | Value |
-|--------|-------|
-| **Average Response Time** | 8.5 seconds |
-| **Knowledge Graph Search** | < 1 second |
-| **Web Search + Ingestion** | 5-15 seconds |
-| **Topic Exploration** | < 1 second |
-| **Follow-up Questions** | 10-20 seconds |
-
-## 📦 Deployment
-
-See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for:
-- Docker deployment
-- systemd service (Linux)
-- PM2 (Node.js process manager)
-- Production configuration
-- Monitoring and health checks
-
-## 🔄 Automated Backups
-
-Weekly backups via GitHub Actions (Sundays 2 AM UTC):
-
+**Create Session:**
 ```bash
-# Manual backup
-python scripts/backup_neo4j.py
-
-# Restore
-python scripts/restore_neo4j.py backups/neo4j/backup_2026-04-28.cypher
+curl -X POST http://localhost:8000/api/sessions/ \
+  -H "Content-Type: application/json" \
+  -d '{}'
 ```
 
-## Project Structure
+## 🏗️ Architecture
+
+```
+┌─────────────────┐
+│   Next.js UI    │  ← User Interface (React + Tailwind)
+│  (Port 3000)    │
+└────────┬────────┘
+         │ HTTP + SSE
+         ↓
+┌─────────────────┐
+│   FastAPI       │  ← RESTful API + Streaming
+│  (Port 8000)    │
+└────────┬────────┘
+         │
+    ┌────┴────┐
+    ↓         ↓
+┌─────────┐ ┌──────────────┐
+│  Groq   │ │  Neo4j Aura  │
+│   LLM   │ │  Knowledge   │
+└─────────┘ │    Graph     │
+            └──────────────┘
+```
+
+### Key Components
+
+- **Frontend:** Next.js 16 with App Router, Vercel AI SDK, Tailwind CSS
+- **Backend:** FastAPI with SSE streaming, session management
+- **AI Engine:** ResearchService with LangChain agent
+- **Knowledge Graph:** Neo4j Aura with BM25 + vector search
+- **LLM:** Groq cloud API (llama-3.3-70b-versatile)
+- **Search:** DuckDuckGo for web research
+
+## 📁 Project Structure
 
 ```
 tech-news-digest-bot/
 ├── src/tech_digest_bot/
-│   ├── ai/
-│   │   ├── agent.py          # LangChain agent
-│   │   ├── tools/            # Graph search, web search, explore
-│   │   ├── llm.py            # Groq LLM client
-│   │   └── research.py       # Research service
-│   ├── graph/
-│   │   ├── neo4j_store.py    # Neo4j wrapper
-│   │   └── graph_queries.py  # BM25 + Cypher queries
-│   ├── bot/                  # Telegram bot
-│   ├── search/               # DuckDuckGo
-│   └── config/               # Settings
-├── scripts/                  # Test and utility scripts
-├── docs/                     # Documentation
-└── backups/neo4j/            # Automated backups
+│   ├── api/                      # FastAPI application
+│   │   ├── main.py               # App entry + lifespan
+│   │   ├── session.py            # Session management
+│   │   ├── streaming.py          # SSE utilities
+│   │   ├── models/               # Request/response models
+│   │   └── routes/               # API endpoints
+│   ├── ai/                       # AI/research logic
+│   │   ├── research.py           # Research service
+│   │   ├── llm.py                # Groq LLM client
+│   │   ├── agent.py              # LangChain agent
+│   │   └── tools/                # Agent tools
+│   ├── graph/                    # Neo4j integration
+│   │   ├── neo4j_store.py        # Vector store
+│   │   └── graph_queries.py      # Cypher queries
+│   ├── search/                   # Search providers
+│   │   └── duckduckgo.py         # DuckDuckGo client
+│   └── config/                   # Configuration
+│       ├── settings.py           # Pydantic settings
+│       └── constants.py          # Constants
+├── frontend/                     # Next.js application
+│   ├── app/                      # Pages (App Router)
+│   ├── components/               # React components
+│   ├── hooks/                    # Custom hooks
+│   ├── lib/                      # API client + utils
+│   └── types/                    # TypeScript types
+├── tests/                        # Test suite
+├── scripts/                      # Utility scripts
+└── docs/                         # Documentation
+```
+
+## 🧪 Testing
+
+```bash
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=tech_digest_bot
+
+# Run specific test file
+pytest tests/unit/test_settings.py
 ```
 
 ## 📚 Documentation
 
-- [Deployment Guide](docs/DEPLOYMENT.md) - Production deployment
-- [BM25 Search](docs/BM25_SEARCH.md) - Search implementation
-- [Implementation Plan](/.claude/plans/i-am-ready-to-unified-ripple.md) - Architecture
+- [Docker Deployment Guide](docs/DOCKER.md) - Docker and Docker Compose setup
+- [Migration Guide](docs/MIGRATION_COMPLETE.md) - Web application migration guide
+- [Feature Research](docs/FEATURE_RESEARCH.md) - Feature planning
+- [Test Updates](docs/TEST_UPDATES.md) - Testing documentation
 
-## 🧩 Key Technologies
+## 🔧 Development
 
-- **[LangChain](https://python.langchain.com/)** - Agent framework
-- **[Neo4j Aura](https://neo4j.com/cloud/aura/)** - Graph database
-- **[Groq](https://groq.com/)** - Ultra-fast cloud LLM inference
-- **[Telegram Bot API](https://core.telegram.org/bots/api)** - Bot platform
+### Backend Development
 
-## 🤝 Contributing
+```bash
+# Run with auto-reload
+uvicorn tech_digest_bot.api.main:app --reload
 
-Contributions welcome! Ideas:
-- Enhanced topic extraction with NER
-- Query expansion for better search
-- Multi-language support
-- Scheduled RSS ingestion
-- Graph analytics (PageRank, clustering)
+# Lint code
+ruff check src/
+
+# Format code
+ruff format src/
+
+# Type check
+mypy src/
+```
+
+### Frontend Development
+
+```bash
+cd frontend
+
+# Development server
+npm run dev
+
+# Build for production
+npm run build
+
+# Start production server
+npm start
+```
+
+## 📦 Deployment
+
+### Backend (Railway / Fly.io / DigitalOcean)
+
+```bash
+# Build Docker image
+docker build -t tech-digest-api .
+
+# Run container
+docker run -p 8000:8000 --env-file .env tech-digest-api
+```
+
+### Frontend (Vercel)
+
+```bash
+# Deploy to Vercel
+cd frontend
+vercel --prod
+```
+
+Or connect your GitHub repository to Vercel for automatic deployments.
+
+## 🔑 Environment Variables
+
+See `.env.example` for all available configuration options.
+
+**Required:**
+- `GROQ_API_KEY` - Groq API key
+- `NEO4J_URI`, `NEO4J_USER`, `NEO4J_PASSWORD` - Neo4j Aura credentials (if agent enabled)
+
+**Optional:**
+- `API_HOST`, `API_PORT` - API server configuration
+- `CORS_ORIGINS` - Allowed frontend origins
+- `SESSION_TTL_HOURS` - Session expiration time
+- `GROQ_MODEL` - LLM model selection
+- `USE_LANGCHAIN_AGENT` - Enable/disable agent
 
 ## 📝 License
 
-Apache 2.0
+MIT License - see LICENSE file for details
 
----
+## 🙏 Credits
 
-**Built with ❤️ using LangChain, Neo4j Aura, and Groq**
+- **LangChain** - Agent framework
+- **Groq** - Ultra-fast LLM inference
+- **Neo4j** - Graph database
+- **FastAPI** - Modern Python web framework
+- **Next.js** - React framework
+- **Vercel** - AI SDK for streaming chat
+
+## 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## 📧 Support
+
+For issues and questions, please open an issue on GitHub.

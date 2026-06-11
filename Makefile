@@ -1,49 +1,37 @@
-.PHONY: help run stop install lint format typecheck clean status
+.PHONY: help start stop install install-frontend lint format typecheck test clean status docker-logs docker-build
 
 # Default target
 help:
-	@echo "Tech Digest Bot - Make Targets"
-	@echo "==============================="
+	@echo "Tech Digest AI - Make Targets"
+	@echo "=============================="
 	@echo ""
 	@echo "Running:"
-	@echo "  make run              - Run the bot"
-	@echo "  make stop             - Stop the bot"
-	@echo "  make status           - Check if bot is running"
+	@echo "  make start            - Start with Docker Compose"
+	@echo "  make stop             - Stop Docker services"
+	@echo "  make docker-logs      - View Docker logs"
+	@echo "  make docker-build     - Rebuild Docker images"
 	@echo ""
 	@echo "Setup:"
-	@echo "  make install          - Install dependencies"
+	@echo "  make install          - Install backend dependencies"
+	@echo "  make install-frontend - Install frontend dependencies"
 	@echo ""
 	@echo "Development:"
 	@echo "  make lint             - Run linter (ruff check)"
 	@echo "  make format           - Format code (ruff format)"
 	@echo "  make typecheck        - Run type checker (mypy)"
+	@echo "  make test             - Run tests"
 	@echo "  make clean            - Clean generated files"
 
-# Run the bot
-run: stop
-	@echo ""
-	@echo "🤖 Starting Tech Digest Bot..."
-	@echo ""
-	@sleep 1
-	@bash run_bot.sh
 
-# Stop the bot
-stop:
-	@echo "🛑 Stopping Tech Digest Bot..."
-	@pkill -f "tech_digest_bot" 2>/dev/null && echo "✅ Bot stopped" || echo "ℹ️  Bot not running"
-
-# Check bot status
-status:
-	@if pgrep -f "tech_digest_bot" > /dev/null; then \
-		echo "✅ Bot is running (PID: $$(pgrep -f 'tech_digest_bot'))"; \
-	else \
-		echo "❌ Bot is not running"; \
-	fi
-
-# Install dependencies
+# Install backend dependencies
 install:
-	@echo "📦 Installing dependencies..."
-	.venv/bin/python3 -m pip install -e .
+	@echo "📦 Installing backend dependencies..."
+	pip install -e .
+
+# Install frontend dependencies
+install-frontend:
+	@echo "📦 Installing frontend dependencies..."
+	cd frontend && npm install
 
 # Run linter
 lint:
@@ -60,6 +48,11 @@ typecheck:
 	@echo "🔎 Running type checker..."
 	mypy src/
 
+# Run tests
+test:
+	@echo "🧪 Running tests..."
+	pytest
+
 # Clean generated files
 clean:
 	@echo "🧹 Cleaning generated files..."
@@ -67,4 +60,37 @@ clean:
 	find . -type d -name "*.egg-info" -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name ".mypy_cache" -exec rm -rf {} + 2>/dev/null || true
 	find . -type d -name ".ruff_cache" -exec rm -rf {} + 2>/dev/null || true
+	find . -type d -name ".pytest_cache" -exec rm -rf {} + 2>/dev/null || true
+	cd frontend && rm -rf .next node_modules/.cache 2>/dev/null || true
 	@echo "✅ Clean complete"
+
+# Docker commands
+start:
+	@echo "🐳 Starting Docker services..."
+	@if [ ! -f .env ]; then \
+		echo "⚠️  .env file not found. Copy .env.docker to .env and configure it."; \
+		echo "   cp .env.docker .env"; \
+		exit 1; \
+	fi
+	docker-compose up -d
+	@echo ""
+	@echo "✅ Services started!"
+	@echo "   Frontend: http://localhost:3000"
+	@echo "   Backend:  http://localhost:8000"
+	@echo ""
+	@echo "View logs: make docker-logs"
+
+stop:
+	@echo "🛑 Stopping Docker services..."
+	docker-compose down
+	@echo "✅ Services stopped"
+
+logs:
+	@echo "📋 Docker logs (Ctrl+C to exit)..."
+	docker-compose logs -f
+
+build:
+	@echo "🔨 Rebuilding Docker images..."
+	docker-compose build --no-cache
+	@echo "✅ Build complete"
+	@echo "Start services: make start"

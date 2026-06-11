@@ -1,6 +1,11 @@
-"""Entry point for running the bot as a module: python -m tech_digest_bot"""
+"""Entry point for running the API as a module: python -m tech_digest_bot"""
 
-from .bot.app import main
+import uvicorn
 
 if __name__ == "__main__":
-    main()
+    uvicorn.run(
+        "tech_digest_bot.api.main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=False,
+    )

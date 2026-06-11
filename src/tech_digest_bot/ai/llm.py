@@ -11,12 +11,13 @@ from ..config.constants import (
     DIGEST_MAX_WORDS,
     DIGEST_MIN_WORDS,
 )
+from ..prompts import get_prompt
 
 logger = logging.getLogger(__name__)
 
 
 class LLMClient:
-    """LLM client using Groq for fast cloud inference."""
+    """LLM client using Groq for fast cloud inference and comprehensive answers."""
 
     def __init__(
         self,
@@ -41,75 +42,69 @@ class LLMClient:
         )
         logger.info(f"LLM client initialized with Groq model: {self.model}")
 
-    async def generate_digest(
+    async def generate_answer(
         self,
         topic: str,
         context: str,
         system_prompt: str | None = None,
-        max_tokens: int = 800,
+        max_tokens: int | None = None,
     ) -> str:
         """
-        Generate a tech digest using the LLM.
+        Generate a comprehensive answer using the LLM.
 
         Args:
-            topic: Topic to research
+            topic: Topic or question to answer
             context: Research context from search results
             system_prompt: Optional custom system prompt
-            max_tokens: Maximum tokens in response
+            max_tokens: Maximum tokens in response (None = no limit)
 
         Returns:
-            Generated digest text
+            Generated answer text
         """
-        default_system_prompt = f"""You are a tech digest assistant.
-Your job is to create concise, informative 2-minute digests.
+        default_system_prompt = get_prompt("system_answer")
 
-Guidelines:
-- Start with a brief overview (1-2 sentences)
-- Cover the most important points in bullet format
-- Include recent developments or trends if relevant
-- Use clear, accessible language
-- Aim for ~{DIGEST_MIN_WORDS}-{DIGEST_MAX_WORDS} words (2-minute read)
-- Format in markdown with emojis for visual appeal
-- Add 2-3 source URLs at the end
-
-Keep it engaging but accurate."""
-
-        user_prompt = f"""Create a 2-minute digest about: {topic}
+        user_prompt = f"""Answer this question comprehensively: {topic}
 
 Based on these search results:
 
 {context}
 
-Generate a comprehensive yet concise digest."""
+Provide a thorough, well-structured answer that covers all the important information."""
 
         try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
+            # Build request params
+            params = {
+                "model": self.model,
+                "messages": [
                     {
                         "role": "system",
                         "content": system_prompt or default_system_prompt,
                     },
                     {"role": "user", "content": user_prompt},
                 ],
-                temperature=0.7,
-                max_tokens=max_tokens,
-            )
+                "temperature": 0.7,
+            }
 
-            digest = response.choices[0].message.content
-            if digest:
-                return digest.strip()
+            # Only add max_tokens if specified
+            if max_tokens is not None:
+                params["max_tokens"] = max_tokens
+
+            response = self.client.chat.completions.create(**params)
+
+            answer = response.choices[0].message.content
+            if answer:
+                return answer.strip()
             return ""
 
         except Exception as e:
-            logger.error("Error generating digest: %s", e)
+            logger.error("Error generating answer: %s", e)
             raise
 
     async def answer_question(
         self,
         question: str,
         conversation_history: list[dict[str, str]],
-        max_tokens: int = 500,
+        max_tokens: int | None = None,
     ) -> str:
         """
         Answer a follow-up question based on conversation history.
@@ -117,32 +112,30 @@ Generate a comprehensive yet concise digest."""
         Args:
             question: User's question
             conversation_history: Previous messages
-            max_tokens: Maximum tokens in response
+            max_tokens: Maximum tokens in response (None = no limit)
 
         Returns:
             Answer text
         """
-        system_prompt = """You are a helpful tech assistant.
-Answer follow-up questions based on the previous digest.
-
-Guidelines:
-- Be concise but informative
-- Reference the previous digest when relevant
-- If you need more information, suggest what to search for
-- Use markdown formatting with emojis
-- Keep answers under 150 words unless more detail is needed"""
+        system_prompt = get_prompt("system_followup")
 
         messages = [{"role": "system", "content": system_prompt}]
         messages.extend(conversation_history)
         messages.append({"role": "user", "content": question})
 
         try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=messages,
-                temperature=DEFAULT_GROQ_TEMPERATURE,
-                max_tokens=max_tokens,
-            )
+            # Build request params
+            params = {
+                "model": self.model,
+                "messages": messages,
+                "temperature": DEFAULT_GROQ_TEMPERATURE,
+            }
+
+            # Only add max_tokens if specified
+            if max_tokens is not None:
+                params["max_tokens"] = max_tokens
+
+            response = self.client.chat.completions.create(**params)
 
             answer = response.choices[0].message.content
             if answer:
@@ -158,7 +151,7 @@ Guidelines:
         prompt: str,
         system_prompt: str | None = None,
         temperature: float = DEFAULT_GROQ_TEMPERATURE,
-        max_tokens: int = 200,
+        max_tokens: int | None = None,
     ) -> str:
         """
         Generate a response using the LLM.
@@ -169,7 +162,7 @@ Guidelines:
             prompt: User prompt text
             system_prompt: Optional system prompt (default: basic assistant)
             temperature: Sampling temperature (default: 0.7)
-            max_tokens: Maximum tokens in response (default: 200)
+            max_tokens: Maximum tokens in response (None = no limit)
 
         Returns:
             Generated text
@@ -179,18 +172,24 @@ Guidelines:
         )
 
         try:
-            response = self.client.chat.completions.create(
-                model=self.model,
-                messages=[
+            # Build request params
+            params = {
+                "model": self.model,
+                "messages": [
                     {
                         "role": "system",
                         "content": system_prompt or default_system_prompt,
                     },
                     {"role": "user", "content": prompt},
                 ],
-                temperature=temperature,
-                max_tokens=max_tokens,
-            )
+                "temperature": temperature,
+            }
+
+            # Only add max_tokens if specified
+            if max_tokens is not None:
+                params["max_tokens"] = max_tokens
+
+            response = self.client.chat.completions.create(**params)
 
             result = response.choices[0].message.content
             if result:

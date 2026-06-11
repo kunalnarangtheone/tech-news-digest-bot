@@ -26,14 +26,6 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # Telegram configuration
-    telegram_bot_token: str = Field(
-        ...,  # Required
-        description="Telegram bot token from BotFather"
-    )
-    telegram_channel_id: str | None = Field(default=None)
-    telegram_alert_chat: str | None = Field(default=None)
-
     # Groq LLM configuration
     groq_api_key: str = Field(
         ...,  # Required
@@ -78,6 +70,30 @@ class Settings(BaseSettings):
         ge=1,
         le=4096,
         description="Embedding vector dimension"
+    )
+
+    # API configuration
+    api_host: str = Field(
+        default="0.0.0.0",
+        description="API server host"
+    )
+    api_port: int = Field(
+        default=8000,
+        ge=1,
+        le=65535,
+        description="API server port"
+    )
+    cors_origins: list[str] = Field(
+        default=["http://localhost:3000", "http://localhost:3001"],
+        description="CORS allowed origins"
+    )
+
+    # Session configuration
+    session_ttl_hours: int = Field(
+        default=24,
+        ge=1,
+        le=168,  # Max 1 week
+        description="Session TTL in hours"
     )
 
     @model_validator(mode='after')

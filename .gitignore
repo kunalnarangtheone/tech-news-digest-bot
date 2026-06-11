@@ -60,3 +60,16 @@ scripts/archive/
 
 # Claude
 .claude/
+
+# AI and automation tools
+.ai-toolkit/
+.playwright-mcp/
+
+# Frontend build artifacts
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.vercel/
+
+# ML models cache
+models/

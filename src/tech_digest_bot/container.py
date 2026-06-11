@@ -47,7 +47,7 @@ def create_container() -> ApplicationContainer:
 
     # Wire dependencies to modules that need injection
     container.wire(modules=[
-        "tech_digest_bot.bot.app",
+        "tech_digest_bot.api.main",
     ])
 
     return container

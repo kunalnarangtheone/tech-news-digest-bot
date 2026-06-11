@@ -1,19 +1,17 @@
-"""Tech Digest Bot - AI-powered tech research bot.
+"""Tech Digest AI - AI-powered tech research API.
 
-This module provides the main bot implementation.
+This module provides the core AI research functionality.
 """
 
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 
-from . import ai, bot, config, graph, search
-from .bot import TechDigestBot
+from . import ai, api, config, graph, search
 
 __all__ = [
     "__version__",
     "ai",
-    "bot",
+    "api",
     "config",
     "graph",
     "search",
-    "TechDigestBot",
 ]

@@ -1,12 +1,12 @@
 [project]
 name = "tech-digest-bot"
 version = "0.4.0"
-description = "AI-powered tech news research bot with LangChain agent and Neo4j knowledge graph"
+description = "AI-powered tech news research API with LangChain agent and Neo4j knowledge graph"
 readme = "README.md"
 requires-python = ">=3.14"
 license = { text = "MIT" }
 authors = [{ name = "Kunal Narang" }]
-keywords = ["ai", "telegram", "bot", "tech-news", "langchain", "neo4j", "knowledge-graph", "research"]
+keywords = ["ai", "web", "api", "tech-news", "langchain", "neo4j", "knowledge-graph", "research", "fastapi", "nextjs"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -15,7 +15,6 @@ classifiers = [
 ]
 
 dependencies = [
-    "python-telegram-bot>=21.0",
     "python-dotenv>=1.0.0",
     "openai>=1.0.0",
     "groq>=1.0.0",
@@ -34,6 +33,10 @@ dependencies = [
     "dependency-injector>=4.41.0",
     "jinja2>=3.1.0",
     "neo4j>=5.14.0",
+    # FastAPI dependencies
+    "fastapi>=0.109.0",
+    "uvicorn[standard]>=0.27.0",
+    "sse-starlette>=1.8.0",
 ]
 
 [project.optional-dependencies]
@@ -47,7 +50,7 @@ dev = [
 ]
 
 [project.scripts]
-tech-digest-bot = "tech_digest_bot.bot.app:main"
+tech-digest-api = "tech_digest_bot.api.main:main"
 
 [project.urls]
 Repository = "https://github.com/yourusername/tech-digest-bot"
@@ -89,7 +92,7 @@ warn_unused_configs = true
 disallow_untyped_defs = true
 
 [[tool.mypy.overrides]]
-module = ["ddgs", "telegram.*"]
+module = ["ddgs"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

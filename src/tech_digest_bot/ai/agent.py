@@ -107,7 +107,7 @@ class TechIntelligenceAgent:
 
     def _create_system_prompt(self) -> str:
         """Create system prompt for agent."""
-        return f"""You are a tech research assistant with access to a \
+        return """You are a tech research assistant with access to a \
 knowledge graph and web search.
 
 **Available Tools:**
@@ -121,11 +121,12 @@ knowledge graph and web search.
 - Use explore_graph_relationships for "what's related" questions
 
 **Response Format:**
-- Synthesize information from tool results
+- Synthesize information from tool results comprehensively
 - Include URLs as references
-- Keep answers concise ({AGENT_ANSWER_MIN_WORDS}-{AGENT_ANSWER_MAX_WORDS} words)
+- Be thorough and cover all important aspects
 - Use markdown formatting
-- Always cite sources"""
+- Always cite sources
+- Provide detailed, complete answers that fully address the query"""
 
     async def research(self, query: str) -> dict:
         """
@@ -205,10 +206,14 @@ provide a comprehensive answer to the question: "{query}"
 Research Results:
 {context}
 
-Provide a well-structured answer ({AGENT_ANSWER_MIN_WORDS}-{AGENT_ANSWER_MAX_WORDS} words) with:
-- Brief overview (1-2 sentences)
-- Key points in bullet format
-- Relevant URLs as references"""
+Provide a thorough, well-structured answer with:
+- Clear overview
+- Detailed coverage of all key points
+- Relevant context and background
+- Specific examples or details where available
+- Relevant URLs as references
+
+Be comprehensive - cover all important aspects fully."""
 
             chain = prompt | self.llm
             result = await chain.ainvoke({"input": synthesis_prompt})

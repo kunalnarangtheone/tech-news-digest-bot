@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 
 
 class ResearchService:
-    """Service for researching tech topics using multiple sources."""
+    """Service for answering tech questions using multiple sources."""
 
     def __init__(
         self,
@@ -26,7 +26,7 @@ class ResearchService:
         Initialize research service.
 
         Args:
-            llm_client: LLM client for generating digests
+            llm_client: LLM client for generating answers
             use_agent: Whether to use LangChain agent (default: True)
             settings: Settings object for agent initialization
         """
@@ -69,17 +69,17 @@ class ResearchService:
 
     async def research_topic(self, topic: str) -> str:
         """
-        Research a tech topic and generate a digest.
+        Research a tech topic and generate a comprehensive answer.
 
         Priority:
         1. LangChain agent (if enabled) - intelligent tool selection
         2. Basic DuckDuckGo - fallback
 
         Args:
-            topic: Topic to research
+            topic: Topic or question to research
 
         Returns:
-            Generated digest as markdown text
+            Generated answer as markdown text
         """
         logger.info("Researching topic: %s", topic)
 
@@ -103,10 +103,10 @@ class ResearchService:
         Research using only DuckDuckGo web search.
 
         Args:
-            topic: Topic to research
+            topic: Topic or question to research
 
         Returns:
-            Generated digest
+            Generated answer
         """
         # Search the web
         search_results = await self.ddg.search(topic, max_results=5)
@@ -125,9 +125,9 @@ class ResearchService:
             ]
         )
 
-        # Generate digest
-        digest = await self.llm.generate_digest(topic, context)
-        return digest
+        # Generate answer
+        answer = await self.llm.generate_answer(topic, context)
+        return answer
 
     async def answer_followup(
         self, question: str, conversation_history: list[dict[str, str]]

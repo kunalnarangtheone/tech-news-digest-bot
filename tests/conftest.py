@@ -17,7 +17,6 @@ from tech_digest_bot.graph.neo4j_store import TechDigestNeo4jStore
 def mock_settings() -> Settings:
     """Mock settings for testing (no validation)."""
     with patch.dict('os.environ', {
-        'TELEGRAM_BOT_TOKEN': 'test-token-123',
         'NEO4J_PASSWORD': 'test-password',
         'GROQ_API_KEY': 'test-groq-key',
         'GROQ_MODEL': 'llama-3.3-70b-versatile',
